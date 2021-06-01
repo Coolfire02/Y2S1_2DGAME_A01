@@ -104,6 +104,21 @@
     <ClCompile Include="Source\GUI\GUI.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Primitives\Mesh.cpp">
+      <Filter>Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Primitives\MeshBuilder.cpp">
+      <Filter>Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Primitives\SpriteAnimation.cpp">
+      <Filter>Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GUI\backends\imgui_impl_glfw.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GUI\backends\imgui_impl_opengl3.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TimeControl\FPSCounter.h">
@@ -173,6 +188,24 @@
       <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="Source\GUI\GUI.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\System\rapidcsv.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Primitives\Mesh.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Primitives\MeshBuilder.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Primitives\SpriteAnimation.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GUI\backends\imgui_impl_glfw.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GUI\backends\imgui_impl_opengl3.h">
       <Filter>GUI</Filter>
     </ClInclude>
   </ItemGroup>

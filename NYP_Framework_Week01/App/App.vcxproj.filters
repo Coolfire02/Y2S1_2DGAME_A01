@@ -23,12 +23,42 @@
     <ClCompile Include="Source\Scene2D\Scene2D.cpp">
       <Filter>2DGame</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene2D\Map2D.cpp">
+      <Filter>2DGame</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene2D\Player2D.cpp">
+      <Filter>2DGame</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene2D\GUI_Scene2D.cpp">
+      <Filter>2DGame</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene2D\InventoryItem.cpp">
+      <Filter>2DGame</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene2D\InventoryManager.cpp">
+      <Filter>2DGame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene2D\Scene2D.h">
+      <Filter>2DGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\Map2D.h">
+      <Filter>2DGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\Player2D.h">
+      <Filter>2DGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\GUI_Scene2D.h">
+      <Filter>2DGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\InventoryItem.h">
+      <Filter>2DGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\InventoryManager.h">
       <Filter>2DGame</Filter>
     </ClInclude>
   </ItemGroup>

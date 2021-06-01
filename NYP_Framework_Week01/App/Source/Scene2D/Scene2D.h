@@ -5,7 +5,10 @@
  */
 #pragma once
 
- // Include GLEW
+// Class Includes
+#include "Map2D.h"
+
+// Include GLEW
 #ifndef GLEW_STATIC
 #include <GL/glew.h>
 #define GLEW_STATIC
@@ -22,11 +25,14 @@
 // Include Shader Manager
 #include "RenderControl\ShaderManager.h"
 
+// Include Player
+#include "Player2D.h"
+
 // Include Keyboard controller
 #include "Inputs\KeyboardController.h"
 
-// GUI
-#include "GUI/GUI.h"
+// GUI 2D
+#include "GUI_Scene2D.h"
 
 class CScene2D : public CSingletonTemplate<CScene2D>
 {
@@ -49,6 +55,12 @@ public:
 	void PostRender(void);
 
 protected:
+	//CPlayer Object
+	CPlayer2D* cPlayer2D;
+
+	//Protected as the map should not be reached by other classes
+	CMap2D* cMap2d;
+
 	//Moved constructor & destructor to prevent instantiation without using getInstance from Singleton STL
 	// Constructor
 	CScene2D(void);
@@ -62,6 +74,6 @@ protected:
 	glm::mat4 transform;
 
 	// GUI
-	CGUI* cGUI;
+	CGUI_Scene2D* cGUI;
 };
 

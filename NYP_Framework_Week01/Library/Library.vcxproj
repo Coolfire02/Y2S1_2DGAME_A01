@@ -12,6 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\GameControl\Settings.cpp" />
+    <ClCompile Include="Source\GUI\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Source\GUI\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="Source\GUI\GUI.cpp" />
     <ClCompile Include="Source\GUI\imgui.cpp" />
     <ClCompile Include="Source\GUI\imgui_demo.cpp" />
@@ -24,6 +26,9 @@
     <ClCompile Include="Source\Primitives\Entity2D.cpp" />
     <ClCompile Include="Source\Primitives\Entity3D.cpp" />
     <ClCompile Include="Source\Primitives\LevelOfDetails.cpp" />
+    <ClCompile Include="Source\Primitives\Mesh.cpp" />
+    <ClCompile Include="Source\Primitives\MeshBuilder.cpp" />
+    <ClCompile Include="Source\Primitives\SpriteAnimation.cpp" />
     <ClCompile Include="Source\RenderControl\ShaderManager.cpp" />
     <ClCompile Include="Source\RenderControl\TextRenderer.cpp" />
     <ClCompile Include="Source\Scripting\ScriptManager.cpp" />
@@ -37,6 +42,8 @@
   <ItemGroup>
     <ClInclude Include="Source\DesignPatterns\SingletonTemplate.h" />
     <ClInclude Include="Source\GameControl\Settings.h" />
+    <ClInclude Include="Source\GUI\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="Source\GUI\backends\imgui_impl_opengl3.h" />
     <ClInclude Include="Source\GUI\GUI.h" />
     <ClInclude Include="Source\GUI\imconfig.h" />
     <ClInclude Include="Source\GUI\imgui.h" />
@@ -47,6 +54,9 @@
     <ClInclude Include="Source\Primitives\Entity2D.h" />
     <ClInclude Include="Source\Primitives\Entity3D.h" />
     <ClInclude Include="Source\Primitives\LevelOfDetails.h" />
+    <ClInclude Include="Source\Primitives\Mesh.h" />
+    <ClInclude Include="Source\Primitives\MeshBuilder.h" />
+    <ClInclude Include="Source\Primitives\SpriteAnimation.h" />
     <ClInclude Include="Source\RenderControl\Shader.h" />
     <ClInclude Include="Source\RenderControl\ShaderManager.h" />
     <ClInclude Include="Source\RenderControl\TextRenderer.h" />
@@ -56,6 +66,7 @@
     <ClInclude Include="Source\System\filesystem.h" />
     <ClInclude Include="Source\System\ImageLoader.h" />
     <ClInclude Include="Source\System\LoadOBJ.h" />
+    <ClInclude Include="Source\System\rapidcsv.h" />
     <ClInclude Include="Source\TimeControl\FPSCounter.h" />
     <ClInclude Include="Source\TimeControl\StopWatch.h" />
   </ItemGroup>
