@@ -211,6 +211,64 @@ void CPlayer2D::Update(const double dElapsedTime)
 }
 
 /**
+ * @brief Check if a position is possible to move into.
+ * @param eDirection A DIRECTION enumerated data type which indidcates the direction to check
+ */
+bool CPlayer2D::CheckPosition(DIRECTION eDirection)
+{
+	if (eDirection == DIRECTION_UP)
+	{
+		if (i32vec2Index.y >= cSettings->NUM_STEPS_PER_TILE_YAXIS - 1)
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+	}
+	else if (eDirection == DIRECTION_DOWN)
+	{
+		if (i32vec2Index.y <= 1)
+		{
+			i32vec2NumMicroSteps.y = 0;
+			return true;
+		}
+	}
+
+	else if (eDirection == DIRECTION_LEFT)
+	{
+		if (i32vec2Index.x <= 1)
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+	}
+	else if (eDirection == DIRECTION_RIGHT)
+	{
+		if (i32vec2Index.x >= cSettings->NUM_STEPS_PER_TILE_XAXIS - 1)
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+	}
+	//If the new pos is fulyl within a row, then check this row only
+	if (i32vec2NumMicroSteps.y == 0)
+	{
+		if (cMap2D->GetMapInfo(i32vec2Index.y, i32vec2Index.x + 1) >= 100)
+		{
+			return false;
+		}
+	}
+	//If the new position is between 2 rows, then check both rows
+	if (i32vec2NumMicroSteps.y != 0)
+	{
+		if (cMap2D->GetMapInfo(i32vec2Index.y, i32vec2Index.x + 1) >= 100 
+			|| cMap2D->GetMapInfo(i32vec2Index.y + 1, i32vec2Index.x + 1) >= 100)
+		{
+			return false;
+		}
+	}
+}
+
+/**
  @brief Set up the OpenGL display environment before rendering
  */
 void CPlayer2D::PreRender(void)

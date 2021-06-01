@@ -34,6 +34,14 @@ class CMap2D;
 // Include Keyboard controller
 #include "Inputs\KeyboardController.h"
 
+enum DIRECTION {
+	DIRECTION_UP,
+	DIRECTION_DOWN,
+	DIRECTION_LEFT,
+	DIRECTION_RIGHT,
+	DIRECTION_COUNT
+};
+
 class CPlayer2D : public CSingletonTemplate<CPlayer2D>, public CEntity2D
 {
 	friend CSingletonTemplate<CPlayer2D>;
@@ -53,6 +61,8 @@ public:
 
 	// PostRender
 	void PostRender(void);
+
+	bool CheckPosition(DIRECTION eDirection);
 
 protected:
 	enum DIRECTION

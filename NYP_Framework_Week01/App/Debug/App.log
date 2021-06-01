@@ -1,2 +1,7 @@
-﻿  GUI_Scene2D.cpp
-  App.vcxproj -> C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week01\Debug\App.exe
+﻿  Application.cpp
+  Player2D.cpp
+C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week01\App\Source\Scene2D\Player2D.cpp(420,1): error C2084: function 'bool CPlayer2D::CheckPosition(CPlayer2D::DIRECTION)' already has a body
+C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week01\App\Source\Scene2D\Player2D.cpp(217): message : see previous definition of 'CheckPosition'
+  Scene2D.cpp
+  main.cpp
+  Generating Code...
