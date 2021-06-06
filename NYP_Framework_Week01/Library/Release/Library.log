@@ -1,8 +1,0 @@
-﻿  Settings.cpp
-  KeyboardController.cpp
-  MouseController.cpp
-  TextRenderer.cpp
-  ImageLoader.cpp
-  FPSCounter.cpp
-  StopWatch.cpp
-  Library.vcxproj -> D:\My Documents\2020_2021_SEM1\DM2231 Game Development Techniques\Teaching Materials\Week 07\New Practical\NYP_Framework_Week07\Release\Library.lib

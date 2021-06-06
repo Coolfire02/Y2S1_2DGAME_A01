@@ -1,0 +1,17 @@
+﻿  Application.cpp
+  main.cpp
+  GameManager.cpp
+  GUI_Scene2D.cpp
+  InventoryItem.cpp
+  InventoryManager.cpp
+  Map2D.cpp
+  Physics2D.cpp
+  Player2D.cpp
+C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\Player2D.cpp(473,22): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\Player2D.cpp(503,22): warning C4018: '>=': signed/unsigned mismatch
+  Scene2D.cpp
+  SoundController.cpp
+  SoundInfo.cpp
+  Generating Code...
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  App.vcxproj -> C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\Debug\App.exe
