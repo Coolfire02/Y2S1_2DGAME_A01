@@ -134,18 +134,16 @@ bool CPlayer2D::Init(void)
 	return true;
 }
 
-/**
- @brief Update this instance
- */
-void CPlayer2D::Update(const double dElapsedTime)
+void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime)
 {
 	// Store the old position
 	i32vec2OldIndex = i32vec2Index;
+	i32vec2OldMicroIndex = i32vec2NumMicroSteps;
 
-	// Get keyboard updates
-	if (cKeyboardController->IsKeyDown(GLFW_KEY_A))
+	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
+
+	if (relativeDir.x == -1) // "A" Key
 	{
-		// Calculate the new position to the left
 		if (i32vec2Index.x >= 0)
 		{
 			i32vec2NumMicroSteps.x--;
@@ -155,19 +153,17 @@ void CPlayer2D::Update(const double dElapsedTime)
 				i32vec2Index.x--;
 			}
 		}
-
-		// Constraint the player's position within the screen boundary
-		Constraint(LEFT);
+		Constraint(eDirection);
 
 		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(LEFT) == false)
+		if (CheckPosition(eDirection) == false)
 		{
 			i32vec2Index = i32vec2OldIndex;
 			i32vec2NumMicroSteps.x = 0;
 		}
 
 		// Check if player is in mid-air, such as walking off a platform
-		if (IsMidAir() == true)
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
 		{
 			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
 		}
@@ -178,7 +174,8 @@ void CPlayer2D::Update(const double dElapsedTime)
 		//CS: Change Color
 		currentColor = glm::vec4(1.0, 0.0, 0.0, 1.0);
 	}
-	else if (cKeyboardController->IsKeyDown(GLFW_KEY_D))
+
+	else if (relativeDir.x == 1) // "D" Key
 	{
 		// Calculate the new position to the right
 		if (i32vec2Index.x < (int)cSettings->NUM_TILES_XAXIS)
@@ -193,16 +190,16 @@ void CPlayer2D::Update(const double dElapsedTime)
 		}
 
 		// Constraint the player's position within the screen boundary
-		Constraint(RIGHT);
+		Constraint(eDirection);
 
 		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(RIGHT) == false)
+		if (CheckPosition(eDirection) == false)
 		{
 			i32vec2NumMicroSteps.x = 0;
 		}
 
 		// Check if player is in mid-air, such as walking off a platform
-		if (IsMidAir() == true)
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
 		{
 			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
 		}
@@ -213,7 +210,8 @@ void CPlayer2D::Update(const double dElapsedTime)
 		//CS: Change Color
 		currentColor = glm::vec4(1.0, 1.0, 0.0, 1.0);
 	}
-	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
+	
+	if (relativeDir.y == 1) // "W" Key
 	{
 		// Calculate the new position up
 		if (i32vec2Index.y < (int)cSettings->NUM_TILES_YAXIS)
@@ -227,10 +225,10 @@ void CPlayer2D::Update(const double dElapsedTime)
 		}
 
 		// Constraint the player's position within the screen boundary
-		Constraint(UP);
+		Constraint(eDirection);
 
 		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(UP) == false)
+		if (CheckPosition(eDirection) == false)
 		{
 			i32vec2NumMicroSteps.y = 0;
 		}
@@ -241,7 +239,7 @@ void CPlayer2D::Update(const double dElapsedTime)
 		//CS: Change Color
 		currentColor = glm::vec4(0.0, 1.0, 1.0, 0.5);
 	}
-	else if (cKeyboardController->IsKeyDown(GLFW_KEY_S))
+	else if (relativeDir.y == -1) // "S" Key
 	{
 		// Calculate the new position down
 		if (i32vec2Index.y >= 0)
@@ -255,10 +253,10 @@ void CPlayer2D::Update(const double dElapsedTime)
 		}
 
 		// Constraint the player's position within the screen boundary
-		Constraint(DOWN);
+		Constraint(eDirection);
 
 		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(DOWN) == false)
+		if (CheckPosition(eDirection) == false)
 		{
 			i32vec2Index = i32vec2OldIndex;
 			i32vec2NumMicroSteps.y = 0;
@@ -270,12 +268,61 @@ void CPlayer2D::Update(const double dElapsedTime)
 		//CS: Change Color
 		currentColor = glm::vec4(1.0, 0.0, 1.0, 0.5);
 	}
+	
+}
+
+/**
+ @brief Update this instance
+ */
+void CPlayer2D::Update(const double dElapsedTime)
+{
+
+	switch (cPhysics2D.GetStatus())
+	{
+	case CPhysics2D::STATUS::FALL:
+		std::cout << "STATUS_FALLING" << std::endl;
+		break;
+	case CPhysics2D::STATUS::IDLE:
+		std::cout << "STATUS_IDLE" << std::endl;
+		break;
+	case CPhysics2D::STATUS::JUMP:
+		std::cout << "STATUS_JUMP" << std::endl;
+		break;
+	}
+	// Get keyboard updates
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_A))
+	{
+		Move(CPhysics2D::DIRECTION::LEFT, dElapsedTime);
+	}
+	else if (cKeyboardController->IsKeyDown(GLFW_KEY_D))
+	{
+		Move(CPhysics2D::DIRECTION::RIGHT, dElapsedTime);
+	}
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
+	{
+		cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP);
+		cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+
+		glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
+		relativeDir *= 1.0;
+		cPhysics2D.SetInitialVelocity(relativeDir);
+	}
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
+	{
+	}
+	else if (cKeyboardController->IsKeyDown(GLFW_KEY_S))
+	{
+
+	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_SPACE))
 	{
 		if (cPhysics2D.GetStatus() == CPhysics2D::STATUS::IDLE)
 		{
 			cPhysics2D.SetStatus(CPhysics2D::STATUS::JUMP);
-			cPhysics2D.SetInitialVelocity(glm::vec2(0.0f, 2.0f));
+
+			glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
+			relativeDir *= 2;
+			cPhysics2D.SetInitialVelocity(relativeDir);
 			// Play a sound for jump
 			cSoundController->PlaySoundByID(3);
 		}
@@ -399,9 +446,10 @@ bool CPlayer2D::LoadTexture(const char* filename, GLuint& iTextureID)
  @brief Constraint the player's position within a boundary
  @param eDirection A DIRECTION enumerated data type which indicates the direction to check
  */
-void CPlayer2D::Constraint(DIRECTION eDirection)
+void CPlayer2D::Constraint(CPhysics2D::DIRECTION eDirection)
 {
-	if (eDirection == LEFT)
+	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
+	if (relativeDir.x == -1)
 	{
 		if (i32vec2Index.x < 0)
 		{
@@ -409,7 +457,7 @@ void CPlayer2D::Constraint(DIRECTION eDirection)
 			i32vec2NumMicroSteps.x = 0;
 		}
 	}
-	else if (eDirection == RIGHT)
+	else if (relativeDir.x == 1)
 	{
 		if (i32vec2Index.x >= (int)cSettings->NUM_TILES_XAXIS - 1)
 		{
@@ -417,7 +465,7 @@ void CPlayer2D::Constraint(DIRECTION eDirection)
 			i32vec2NumMicroSteps.x = 0;
 		}
 	}
-	else if (eDirection == UP)
+	else if (relativeDir.y == 1)
 	{
 		if (i32vec2Index.y >= (int)cSettings->NUM_TILES_YAXIS - 1)
 		{
@@ -425,7 +473,7 @@ void CPlayer2D::Constraint(DIRECTION eDirection)
 			i32vec2NumMicroSteps.y = 0;
 		}
 	}
-	else if (eDirection == DOWN)
+	else if (relativeDir.y == -1)
 	{
 		if (i32vec2Index.y < 0)
 		{
@@ -443,10 +491,24 @@ void CPlayer2D::Constraint(DIRECTION eDirection)
  @brief Check if a position is possible to move into
  @param eDirection A DIRECTION enumerated data type which indicates the direction to check
  */
-bool CPlayer2D::CheckPosition(DIRECTION eDirection)
+bool CPlayer2D::CheckPosition(CPhysics2D::DIRECTION eDirection)
 {
-	if (eDirection == LEFT)
+
+	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
+	if (relativeDir.x == -1)
 	{
+		// If the new position is at the top row, then return true
+		if (PlayerIsOnTopRow())
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+		if (PlayerIsOnBottomRow())
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+
 		// If the new position is fully within a row, then check this row only
 		if (i32vec2NumMicroSteps.y == 0)
 		{
@@ -467,10 +529,15 @@ bool CPlayer2D::CheckPosition(DIRECTION eDirection)
 			}
 		}
 	}
-	else if (eDirection == RIGHT)
+	else if (relativeDir.x == 1)
 	{
 		// If the new position is at the top row, then return true
-		if (i32vec2Index.x >= cSettings->NUM_TILES_XAXIS - 1)
+		if (PlayerIsOnTopRow())
+		{
+			i32vec2NumMicroSteps.x = 0;
+			return true;
+		}
+		if (PlayerIsOnBottomRow())
 		{
 			i32vec2NumMicroSteps.x = 0;
 			return true;
@@ -497,10 +564,15 @@ bool CPlayer2D::CheckPosition(DIRECTION eDirection)
 		}
 
 	}
-	else if (eDirection == UP)
+	else if (relativeDir.y == 1)
 	{
 		// If the new position is at the top row, then return true
-		if (i32vec2Index.y >= cSettings->NUM_TILES_YAXIS - 1)
+		if (PlayerIsOnTopRow())
+		{
+			i32vec2NumMicroSteps.y = 0;
+			return true;
+		}
+		if (PlayerIsOnBottomRow())
 		{
 			i32vec2NumMicroSteps.y = 0;
 			return true;
@@ -526,8 +598,21 @@ bool CPlayer2D::CheckPosition(DIRECTION eDirection)
 			}
 		}
 	}
-	else if (eDirection == DOWN)
+	else if (relativeDir.y == -1)
 	{
+
+		// If the new position is at the top row, then return true
+		if (PlayerIsOnTopRow())
+		{
+			i32vec2NumMicroSteps.y = 0;
+			return true;
+		}
+		if (PlayerIsOnBottomRow())
+		{
+			i32vec2NumMicroSteps.y = 0;
+			return true;
+		}
+
 		// If the new position is fully within a column, then check this column only
 		if (i32vec2NumMicroSteps.x == 0)
 		{
@@ -537,7 +622,7 @@ bool CPlayer2D::CheckPosition(DIRECTION eDirection)
 				return false;
 			}
 		}
-		// If the new position is between 2 columns, then check both columns as well
+		//// If the new position is between 2 columns, then check both columns as well
 		else if (i32vec2NumMicroSteps.x != 0)
 		{
 			// If the 2 grids are not accessible, then return false
@@ -557,16 +642,64 @@ bool CPlayer2D::CheckPosition(DIRECTION eDirection)
 }
 
 
+bool CPlayer2D::PlayerIsOnBottomRow() {
+	switch (cPhysics2D.GetGravityDirection())
+	{
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_DOWN:
+		if (i32vec2Index.y == 0)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP:
+		if (i32vec2Index.y == cSettings->NUM_TILES_YAXIS - 1)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT:
+		if (i32vec2Index.x == 0)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_RIGHT:
+		if (i32vec2Index.x == cSettings->NUM_TILES_XAXIS - 1)
+			return true;
+		break;
+	}
+	return false;
+}
+
+bool CPlayer2D::PlayerIsOnTopRow() {
+	switch (cPhysics2D.GetGravityDirection())
+	{
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_DOWN:
+		if (i32vec2Index.y == cSettings->NUM_TILES_YAXIS - 1)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP:
+		if (i32vec2Index.y == 0)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT:
+		if (i32vec2Index.x == cSettings->NUM_TILES_XAXIS - 1)
+			return true;
+		break;
+	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_RIGHT:
+		if (i32vec2Index.x == 0)
+			return true;
+		break;
+	}
+	return false;
+}
+
 // Check if the player is in mid-air
 bool CPlayer2D::IsMidAir(void)
 {
 	// if the player is at the bottom row, then he is not in mid-air for sure
-	if (i32vec2Index.y == 0)
-		return false;
+	if (PlayerIsOnBottomRow()) return false;
+
 
 	// Check if the tile below the player's current position is empty
-	if ((i32vec2NumMicroSteps.x == 0) && 
-		(cMap2D->GetMapInfo(i32vec2Index.y-1, i32vec2Index.x) == 0))
+	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::DOWN);
+
+	if ((i32vec2NumMicroSteps.x == 0 || i32vec2NumMicroSteps.y == 0) &&
+		(cMap2D->GetMapInfo(i32vec2Index.y + relativeDir.y, i32vec2Index.x + relativeDir.x) == 0))
 	{
 		return true;
 	}
@@ -603,7 +736,7 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 		i32vec2NumMicroSteps.y = 0;
 
 		// Constraint the player's position within the screen boundary
-		Constraint(UP);
+		Constraint(CPhysics2D::DIRECTION::UP);
 
 		// Iterate through all rows until the proposed row
 		// Check if the player will hit a tile; stop jump if so.
@@ -613,7 +746,7 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 			// Change the player's index to the current i value
 			i32vec2Index.y = i;
 			// If the new position is not feasible, then revert to old position
-			if (CheckPosition(UP) == false)
+			if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
 			{
 				// Set the Physics to fall status
 				cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
@@ -655,7 +788,12 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 		i32vec2NumMicroSteps.y = 0;
 
 		// Constraint the player's position within the screen boundary
-		Constraint(DOWN);
+		Constraint(CPhysics2D::DIRECTION::DOWN);
+
+		if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP)
+		{
+			int a = 1;
+		}
 
 		// Iterate through all rows until the proposed row
 		// Check if the player will hit a tile; stop fall if so.
@@ -665,7 +803,7 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 			// Change the player's index to the current i value
 			i32vec2Index.y = i;
 			// If the new position is not feasible, then revert to old position
-			if (CheckPosition(DOWN) == false)
+			if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
 			{
 				// Revert to the previous position
 				if (i != iIndex_YAxis_OLD)

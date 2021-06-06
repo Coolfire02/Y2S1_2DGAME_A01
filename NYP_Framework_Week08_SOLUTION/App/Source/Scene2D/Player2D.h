@@ -61,16 +61,9 @@ public:
 	void PostRender(void);
 
 protected:
-	enum DIRECTION
-	{
-		LEFT = 0,
-		RIGHT = 1,
-		UP = 2,
-		DOWN = 3,
-		NUM_DIRECTIONS
-	};
 
 	glm::i32vec2 i32vec2OldIndex;
+	glm::i32vec2 i32vec2OldMicroIndex;
 
 	// Handler to the CMap2D instance
 	CMap2D* cMap2D;
@@ -101,14 +94,23 @@ protected:
 	// Destructor
 	virtual ~CPlayer2D(void);
 
+	// Move in a Direction
+	void Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime);
+
 	// Load a texture
 	bool LoadTexture(const char* filename, GLuint& iTextureID);
 
 	// Constraint the player's position within a boundary
-	void Constraint(DIRECTION eDirection = LEFT);
+	void Constraint(CPhysics2D::DIRECTION eDirection = CPhysics2D::DIRECTION::LEFT);
 
 	// Check if a position is possible to move into
-	bool CheckPosition(DIRECTION eDirection);
+	bool CheckPosition(CPhysics2D::DIRECTION eDirection);
+
+	// Check if Player is at Top Row based on Gravity Dir
+	bool PlayerIsOnTopRow();
+
+	// Check if Player is on Bottom Row based on Gravity Dir
+	bool PlayerIsOnBottomRow();
 
 	// Check if the player is in mid-air
 	bool IsMidAir(void);
