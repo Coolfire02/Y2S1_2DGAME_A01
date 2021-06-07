@@ -274,8 +274,19 @@ void CMap2D::SetMapInfo(const unsigned int uiRow, const unsigned int uiCol, cons
  */
 int CMap2D::GetMapInfo(const unsigned int uiRow, const int unsigned uiCol, const bool bInvert) const
 {
+	if (uiCol >= cSettings->NUM_TILES_XAXIS)
+		return 0;
+	else if (uiCol < 0)
+		return 0;
+	else if (uiRow < 0)
+		return 0;
+	else if (uiRow >= cSettings->NUM_TILES_YAXIS)
+		return 0;
 	if (bInvert)
+	{
 		return arrMapInfo[uiCurLevel][cSettings->NUM_TILES_YAXIS - uiRow - 1][uiCol].value;
+	}
+
 	else
 		return arrMapInfo[uiCurLevel][uiRow][uiCol].value;
 }
