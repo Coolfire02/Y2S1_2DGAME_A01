@@ -126,6 +126,34 @@ void CPhysics2D::SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION dir)
 	sCurrentGravityDirection = dir;
 }
 
+bool CPhysics2D::ReachedPeakOfJump(void) const
+{
+	switch (sCurrentGravityDirection)
+	{
+	case GRAVITY_DOWN:
+		if (v2InitialVelocity.y <= 0.0f)
+			return true;
+		break;
+
+	case GRAVITY_UP:
+		if (v2InitialVelocity.y >= 0.0f)
+			return true;
+		break;
+
+	case GRAVITY_LEFT:
+		if (v2InitialVelocity.x <= 0.0f)
+			return true;
+		break;
+
+	case GRAVITY_RIGHT:
+		if (v2InitialVelocity.x >= 0.0f)
+			return true;
+		break;
+
+	}
+	return false;
+}
+
 glm::vec2 CPhysics2D::GetRelativeDirVector(DIRECTION relativeDir)
 {
 	glm::vec2 gravityDir = GetGravityDirVector();
