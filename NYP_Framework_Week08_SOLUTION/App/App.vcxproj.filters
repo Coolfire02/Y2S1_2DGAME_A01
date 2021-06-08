@@ -53,6 +53,12 @@
     <ClCompile Include="Source\SoundController\SoundInfo.cpp">
       <Filter>SoundController</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene2D\Enemy2D.cpp">
+      <Filter>Scene2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene2D\ItemSpawner.cpp">
+      <Filter>Scene2D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h">
@@ -87,6 +93,12 @@
     </ClInclude>
     <ClInclude Include="Source\SoundController\SoundInfo.h">
       <Filter>SoundController</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\Enemy2D.h">
+      <Filter>Scene2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene2D\ItemSpawner.h">
+      <Filter>Scene2D</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

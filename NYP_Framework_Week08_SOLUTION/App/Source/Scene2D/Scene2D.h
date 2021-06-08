@@ -26,6 +26,10 @@
 #include "Map2D.h"
 // Include CPlayer2D
 #include "Player2D.h"
+// Include CEnemy2D
+#include "Enemy2D.h"
+// Include CItemSpawner2D
+#include "ItemSpawner.h"
 
 // Include Keyboard controller
 #include "Inputs\KeyboardController.h"
@@ -63,8 +67,15 @@ public:
 protected:
 	// The handler containing the instance of the 2D Map
 	CMap2D* cMap2D;
+
 	// The handler containing the instance of CPlayer2Ds
 	CPlayer2D* cPlayer2D;
+
+	// The handler containing the single instance of cEnemy2D
+	CEnemy2D* cEnemy2D;
+
+	// The handler containing the single instance of ItemSpawner2D;
+	CItemSpawner2D* cItemSpawner2D;
 
 	// Keyboard Controller singleton instance
 	CKeyboardController* cKeyboardController;

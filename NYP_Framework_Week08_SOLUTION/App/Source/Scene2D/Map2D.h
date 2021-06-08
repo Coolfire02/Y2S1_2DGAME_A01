@@ -52,6 +52,36 @@ class CMap2D : public CSingletonTemplate<CMap2D>, public CEntity2D
 {
 	friend CSingletonTemplate<CMap2D>;
 public:
+
+	enum TILE_ID {
+		//Entities (1-9)
+		PLAYER = 3,
+		ENEMY = 4,
+
+		ENTITIES_END = 9,
+
+		//Interactables (50-69)
+		BOMB_SMALL = 50,
+		BOMB_MEDIUM = 51,
+
+		POWERUP_DOUBLEJUMP = 55,
+
+		//Interactable Blocks (70-99)
+		ACID_DOWN = 70,
+		ACID_UP = 71,
+		ACID_RIGHT = 72,
+		ACID_LEFT = 73,
+
+		INTERACTABLES_END = 99,
+
+		//Blocks (100-199)
+		COLOUR_BLOCK_UP = 100,
+		COLOUR_BLOCK_DOWN,
+		COLOUR_BLOCK_RIGHT,
+		COLOUR_BLOCK_LEFT,
+		TILE_COUNT
+	};
+
 	// Init
 	bool Init(	const unsigned int uiNumLevels = 1,
 				const unsigned int uiNumRows = 24,
@@ -93,6 +123,9 @@ public:
 	// Get current level
 	unsigned int GetCurrentLevel(void) const;
 
+	// Set Color of tile
+	void SetColorOfTile(TILE_ID id, glm::vec4 color);
+
 protected:
 	// The variable containing the rapidcsv::Document
 	// We will load the CSV file's content into this Document
@@ -100,6 +133,8 @@ protected:
 
 	// A 3-D array which stores the values of the tile map
 	Grid*** arrMapInfo;
+
+	glm::vec4 blockColor[TILE_COUNT];
 
 	// The current level
 	unsigned int uiCurLevel;

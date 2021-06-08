@@ -77,6 +77,11 @@ bool CMap2D::Init(	const unsigned int uiNumLevels,
 		}
 	}
 
+	for (int i = 0; i < TILE_COUNT; ++i)
+	{
+		blockColor[i] = glm::vec4(1.0f, 1.0f, 1.f, 1.f);
+	}
+
 	// Store the map sizes in cSettings
 	uiCurLevel = 0;
 	this->uiNumLevels = uiNumLevels;
@@ -92,9 +97,29 @@ bool CMap2D::Init(	const unsigned int uiNumLevels,
 
 	// Load and create textures
 	// Load the ground texture
-	if (LoadTexture("Image/Scene2D_GroundTile.tga", 100) == false)
+	if (LoadTexture("Image/Scene2D_GroundTile.png", COLOUR_BLOCK_UP) == false)
 	{
 		std::cout << "Failed to load ground tile texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/Scene2D_GroundTile_DOWN.png", COLOUR_BLOCK_DOWN) == false)
+	{
+		std::cout << "Failed to load ground tile down texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/Scene2D_GroundTile_LEFT.png", COLOUR_BLOCK_RIGHT) == false)
+	{
+		std::cout << "Failed to load ground tile left texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/Scene2D_GroundTile_RIGHT.png", COLOUR_BLOCK_LEFT) == false)
+	{
+		std::cout << "Failed to load ground tile right texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/scene2d_bomb.tga", BOMB_SMALL) == false)
+	{
+		std::cout << "Failed to load bomb texture" << std::endl;
 		return false;
 	}
 	// Load the tree texture
@@ -390,6 +415,11 @@ unsigned int CMap2D::GetCurrentLevel(void) const
 }
 
 
+void CMap2D::SetColorOfTile(TILE_ID id, glm::vec4 tileColor)
+{
+	blockColor[id] = tileColor;
+}
+
 /**
  @brief Load a texture, assign it a code and store it in MapOfTextureIDs.
  @param filename A const char* variable which contains the file name of the texture
@@ -444,9 +474,11 @@ bool CMap2D::LoadTexture(const char* filename, const int iTextureCode)
  */
 void CMap2D::RenderTile(const unsigned int uiRow, const unsigned int uiCol)
 {
-	if (arrMapInfo[uiCurLevel][uiRow][uiCol].value != 0)
+	if (arrMapInfo[uiCurLevel][uiRow][uiCol].value > ENTITIES_END)
 	{
 		//if (arrMapInfo[uiCurLevel][uiRow][uiCol].value < 3)
+		unsigned int colorLoc = glGetUniformLocation(CShaderManager::GetInstance()->activeShader->ID, "runtime_color");
+		glUniform4fv(colorLoc, 1, glm::value_ptr(blockColor[arrMapInfo[uiCurLevel][uiRow][uiCol].value]));
 		glBindTexture(GL_TEXTURE_2D, MapOfTextureIDs.at(arrMapInfo[uiCurLevel][uiRow][uiCol].value));
 
 		glBindVertexArray(VAO);

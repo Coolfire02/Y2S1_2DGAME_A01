@@ -164,11 +164,12 @@ glm::vec2 CPhysics2D::GetRelativeDirVector(DIRECTION relativeDir)
 
 	//Set to UP Direction by default
 	glm::vec2 moveDirectionInWorld = glm::vec2(fwdVector.x, fwdVector.y);
+	
 	switch (relativeDir)
 	{
 	case LEFT:
 		moveDirectionInWorld.x = -rightVector.x;
-		moveDirectionInWorld.y = rightVector.y;
+		moveDirectionInWorld.y = -rightVector.y;
 		break;
 	case RIGHT:
 		moveDirectionInWorld.x = rightVector.x;

@@ -11,7 +11,7 @@
 
 class CPhysics2D
 {
-	static const int GRAVITY_MAGNITUDE = 10;
+	float GRAVITY_MAGNITUDE = 1.1;
 public:
 	enum STATUS
 	{
@@ -24,16 +24,16 @@ public:
 	{
 		GRAVITY_DOWN,
 		GRAVITY_UP,
-		GRAVITY_LEFT,
 		GRAVITY_RIGHT,
+		GRAVITY_LEFT,
 		GRAVITY_COUNT
 	};
 	enum DIRECTION
 	{
-		LEFT = 0,
-		RIGHT = 1,
-		UP = 2,
-		DOWN = 3,
+		UP = 0,
+		DOWN = 1,
+		LEFT = 2,
+		RIGHT = 3,
 		NUM_DIRECTIONS
 	};
 

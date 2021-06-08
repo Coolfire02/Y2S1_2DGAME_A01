@@ -37,6 +37,8 @@ class CMap2D;
 // Include InventoryManager
 #include "InventoryManager.h"
 
+#include "ItemSpawner.h"
+
 // Include SoundController
 #include "..\SoundController\SoundController.h"
 
@@ -84,6 +86,8 @@ protected:
 	CInventoryManager* cInventoryManager;
 	// InventoryItem
 	CInventoryItem* cInventoryItem;
+
+	CItemSpawner2D* cItemSpawner;
 
 	// Handler to the CSoundController
 	CSoundController* cSoundController;

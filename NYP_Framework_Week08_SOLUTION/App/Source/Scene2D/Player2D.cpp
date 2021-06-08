@@ -29,6 +29,7 @@ CPlayer2D::CPlayer2D(void)
 	, cKeyboardController(NULL)
 	, cInventoryManager(NULL)
 	, cInventoryItem(NULL)
+	, cItemSpawner(NULL)
 	, cSoundController(NULL)
 {
 	transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
@@ -58,6 +59,9 @@ CPlayer2D::~CPlayer2D(void)
 	cKeyboardController = NULL;
 
 	// We won't delete this since it was created elsewhere
+	cItemSpawner = NULL;
+
+	// We won't delete this since it was created elsewhere
 	cMap2D = NULL;
 
 	// optional: de-allocate all resources once they've outlived their purpose:
@@ -76,6 +80,8 @@ bool CPlayer2D::Init(void)
 
 	// Get the handler to the CSettings instance
 	cSettings = CSettings::GetInstance();
+
+	cItemSpawner = CItemSpawner2D::GetInstance();
 
 	// Get the handler to the CMap2D instance
 	cMap2D = CMap2D::GetInstance();
@@ -134,144 +140,6 @@ bool CPlayer2D::Init(void)
 	return true;
 }
 
-void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime)
-{
-	// Store the old position
-	i32vec2OldIndex = i32vec2Index;
-	i32vec2OldMicroIndex = i32vec2NumMicroSteps;
-
-	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
-
-	if (relativeDir.x == -1) // "A" Key
-	{
-		if (i32vec2Index.x >= 0)
-		{
-			i32vec2NumMicroSteps.x--;
-			if (i32vec2NumMicroSteps.x < 0)
-			{
-				i32vec2NumMicroSteps.x = ((int)cSettings->NUM_STEPS_PER_TILE_XAXIS) - 1;
-				i32vec2Index.x--;
-			}
-		}
-		Constraint(eDirection);
-
-		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(eDirection) == false)
-		{
-			i32vec2Index = i32vec2OldIndex;
-			i32vec2NumMicroSteps.x = 0;
-		}
-
-		// Check if player is in mid-air, such as walking off a platform
-		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
-		{
-			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
-		}
-
-		//CS: Play the "left" animation
-		animatedSprites->PlayAnimation("left", -1, 1.0f);
-
-		//CS: Change Color
-		currentColor = glm::vec4(1.0, 0.0, 0.0, 1.0);
-	}
-
-	else if (relativeDir.x == 1) // "D" Key
-	{
-		// Calculate the new position to the right
-		if (i32vec2Index.x < (int)cSettings->NUM_TILES_XAXIS)
-		{
-			i32vec2NumMicroSteps.x++;
-
-			if (i32vec2NumMicroSteps.x >= cSettings->NUM_STEPS_PER_TILE_XAXIS)
-			{
-				i32vec2NumMicroSteps.x = 0;
-				i32vec2Index.x++;
-			}
-		}
-
-		// Constraint the player's position within the screen boundary
-		Constraint(eDirection);
-
-		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(eDirection) == false)
-		{
-			i32vec2Index = i32vec2OldIndex;
-			i32vec2NumMicroSteps.x = 0;
-		}
-
-		// Check if player is in mid-air, such as walking off a platform
-		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
-		{
-			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
-		}
-
-		//CS: Play the "right" animation
-		animatedSprites->PlayAnimation("right", -1, 1.0f);
-
-		//CS: Change Color
-		currentColor = glm::vec4(1.0, 1.0, 0.0, 1.0);
-	}
-	
-	if (relativeDir.y == 1) // "W" Key
-	{
-		// Calculate the new position up
-		if (i32vec2Index.y < (int)cSettings->NUM_TILES_YAXIS)
-		{
-			i32vec2NumMicroSteps.y++;
-			if (i32vec2NumMicroSteps.y > cSettings->NUM_STEPS_PER_TILE_YAXIS)
-			{
-				i32vec2NumMicroSteps.y = 0;
-				i32vec2Index.y++;
-			}
-		}
-
-		// Constraint the player's position within the screen boundary
-		Constraint(eDirection);
-
-		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(eDirection) == false)
-		{
-			i32vec2NumMicroSteps.y = 0;
-		}
-
-		//CS: Play the "idle" animation
-		animatedSprites->PlayAnimation("idle", -1, 1.0f);
-
-		//CS: Change Color
-		currentColor = glm::vec4(0.0, 1.0, 1.0, 0.5);
-	}
-	else if (relativeDir.y == -1) // "S" Key
-	{
-		// Calculate the new position down
-		if (i32vec2Index.y >= 0)
-		{
-			i32vec2NumMicroSteps.y--;
-			if (i32vec2NumMicroSteps.y < 0)
-			{
-				i32vec2NumMicroSteps.y = ((int)cSettings->NUM_STEPS_PER_TILE_YAXIS) - 1;
-				i32vec2Index.y--;
-			}
-		}
-
-		// Constraint the player's position within the screen boundary
-		Constraint(eDirection);
-
-		// If the new position is not feasible, then revert to old position
-		if (CheckPosition(eDirection) == false)
-		{
-			i32vec2Index = i32vec2OldIndex;
-			i32vec2NumMicroSteps.y = 0;
-		}
-
-		//CS: Play the "idle" animation
-		animatedSprites->PlayAnimation("idle", -1, 1.0f);
-
-		//CS: Change Color
-		currentColor = glm::vec4(1.0, 0.0, 1.0, 0.5);
-	}
-	
-}
-
 /**
  @brief Update this instance
  */
@@ -296,6 +164,23 @@ void CPlayer2D::Update(const double dElapsedTime)
 	if (stat != cPhysics2D.GetStatus())
 		stat = cPhysics2D.GetStatus();
 	// Get keyboard updates
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_SPACE))
+	{
+		if (cPhysics2D.GetStatus() == CPhysics2D::STATUS::IDLE)
+		{
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::JUMP);
+
+			glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
+			relativeDir *= 0.33;
+			cPhysics2D.SetInitialVelocity(relativeDir);
+			// Play a sound for jump
+			cSoundController->PlaySoundByID(3);
+		}
+	}
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_R))
+	{
+		cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_A))
 	{
 		Move(CPhysics2D::DIRECTION::LEFT, dElapsedTime);
@@ -306,11 +191,12 @@ void CPlayer2D::Update(const double dElapsedTime)
 	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
 	{
-		cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP);
+		cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT);
 		cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+		cMap2D->SetCurrentLevel(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT);
 
 		glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
-		relativeDir *= 1.0;
+		relativeDir *= 0.1 ;
 		cPhysics2D.SetInitialVelocity(relativeDir);
 	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
@@ -319,19 +205,6 @@ void CPlayer2D::Update(const double dElapsedTime)
 	else if (cKeyboardController->IsKeyDown(GLFW_KEY_S))
 	{
 
-	}
-	if (cKeyboardController->IsKeyDown(GLFW_KEY_SPACE))
-	{
-		if (cPhysics2D.GetStatus() == CPhysics2D::STATUS::IDLE)
-		{
-			cPhysics2D.SetStatus(CPhysics2D::STATUS::JUMP);
-
-			glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
-			relativeDir *= 2;
-			cPhysics2D.SetInitialVelocity(relativeDir);
-			// Play a sound for jump
-			cSoundController->PlaySoundByID(3);
-		}
 	}
 
 	// Update Jump or Fall
@@ -447,6 +320,158 @@ bool CPlayer2D::LoadTexture(const char* filename, GLuint& iTextureID)
 
 	return true;
 }
+
+void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime)
+{
+	// Store the old position
+	i32vec2OldIndex = i32vec2Index;
+	i32vec2OldMicroIndex = i32vec2NumMicroSteps;
+
+	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
+
+	if (relativeDir.x == -1) // "A" Key
+	{
+		if (i32vec2Index.x >= 0)
+		{
+			i32vec2NumMicroSteps.x--;
+			if (i32vec2NumMicroSteps.x < 0)
+			{
+				i32vec2NumMicroSteps.x = ((int)cSettings->NUM_STEPS_PER_TILE_XAXIS) - 1;
+				i32vec2Index.x--;
+			}
+		}
+		Constraint(eDirection);
+
+		// If the new position is not feasible, then revert to old position
+		if (CheckPosition(eDirection) == false)
+		{
+			i32vec2Index = i32vec2OldIndex;
+			i32vec2NumMicroSteps.x = 0;
+		}
+
+		// Check if player is in mid-air, such as walking off a platform
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
+		{
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+		}
+
+		//CS: Play the "left" animation
+		animatedSprites->PlayAnimation("left", -1, 1.0f);
+
+		//CS: Change Color
+		currentColor = glm::vec4(1.0, 0.0, 0.0, 1.0);
+	}
+
+	else if (relativeDir.x == 1) // "D" Key
+	{
+		// Calculate the new position to the right
+		if (i32vec2Index.x < (int)cSettings->NUM_TILES_XAXIS)
+		{
+			i32vec2NumMicroSteps.x++;
+
+			if (i32vec2NumMicroSteps.x >= cSettings->NUM_STEPS_PER_TILE_XAXIS)
+			{
+				i32vec2NumMicroSteps.x = 0;
+				i32vec2Index.x++;
+			}
+		}
+
+		// Constraint the player's position within the screen boundary
+		Constraint(eDirection);
+
+		// If the new position is not feasible, then revert to old position
+		if (CheckPosition(eDirection) == false)
+		{
+			i32vec2Index = i32vec2OldIndex;
+			i32vec2NumMicroSteps.x = 0;
+		}
+
+		// Check if player is in mid-air, such as walking off a platform
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
+		{
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+		}
+
+		//CS: Play the "right" animation
+		animatedSprites->PlayAnimation("right", -1, 1.0f);
+
+		//CS: Change Color
+		currentColor = glm::vec4(1.0, 1.0, 0.0, 1.0);
+	}
+
+	if (relativeDir.y == 1) // "W" Key
+	{
+		// Calculate the new position up
+		if (i32vec2Index.y < (int)cSettings->NUM_TILES_YAXIS)
+		{
+			i32vec2NumMicroSteps.y++;
+			if (i32vec2NumMicroSteps.y > cSettings->NUM_STEPS_PER_TILE_YAXIS)
+			{
+				i32vec2NumMicroSteps.y = 0;
+				i32vec2Index.y++;
+			}
+		}
+
+		// Constraint the player's position within the screen boundary
+		Constraint(eDirection);
+
+		// If the new position is not feasible, then revert to old position
+		if (CheckPosition(eDirection) == false)
+		{
+			i32vec2Index = i32vec2OldIndex;
+			i32vec2NumMicroSteps.y = 0;
+		}
+
+		// Check if player is in mid-air, such as walking off a platform
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
+		{
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+		}
+
+		//CS: Play the "idle" animation
+		animatedSprites->PlayAnimation("idle", -1, 1.0f);
+
+		//CS: Change Color
+		currentColor = glm::vec4(0.0, 1.0, 1.0, 0.5);
+	}
+	else if (relativeDir.y == -1) // "S" Key
+	{
+		// Calculate the new position down
+		if (i32vec2Index.y >= 0)
+		{
+			i32vec2NumMicroSteps.y--;
+			if (i32vec2NumMicroSteps.y < 0)
+			{
+				i32vec2NumMicroSteps.y = ((int)cSettings->NUM_STEPS_PER_TILE_YAXIS) - 1;
+				i32vec2Index.y--;
+			}
+		}
+
+		// Constraint the player's position within the screen boundary
+		Constraint(eDirection);
+
+		// If the new position is not feasible, then revert to old position
+		if (CheckPosition(eDirection) == false)
+		{
+			i32vec2Index = i32vec2OldIndex;
+			i32vec2NumMicroSteps.y = 0;
+		}
+
+		// Check if player is in mid-air, such as walking off a platform
+		if (IsMidAir() == true && cPhysics2D.GetStatus() != CPhysics2D::STATUS::JUMP)
+		{
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+		}
+
+		//CS: Play the "idle" animation
+		animatedSprites->PlayAnimation("idle", -1, 1.0f);
+
+		//CS: Change Color
+		currentColor = glm::vec4(1.0, 0.0, 1.0, 0.5);
+	}
+
+}
+
 
 /**
  @brief Constraint the player's position within a boundary
@@ -658,63 +683,126 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 		cPhysics2D.AddElapsedTime((float)dElapsedTime);
 		// Call the physics engine update method to calculate the final velocity and displacement
 		cPhysics2D.Update();
+		
 		// Get the displacement from the physics engine
 		glm::vec2 v2Displacement = cPhysics2D.GetDisplacement();
 		std::cout << v2Displacement.x << " " << v2Displacement.y << std::endl;
 
-		// Store the current i32vec2Index.y
-		int iIndex_YAxis_OLD = i32vec2Index.y;
-
-		// Translate the displacement from pixels to indices
-		int iDisplacement = (int)(v2Displacement.y / cSettings->TILE_HEIGHT);
-		int iDisplacement_MicroSteps = (int)((v2Displacement.y * cSettings->iWindowHeight) - iDisplacement) /
-										(int)cSettings->NUM_STEPS_PER_TILE_YAXIS;
-		if (iDisplacement_MicroSteps != 0)
+		if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP || cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_DOWN)
 		{
-			iDisplacement++;
-		}
+			// Store the current i32vec2Index.y
+			int iIndex_YAxis_OLD = i32vec2Index.y;
 
-		iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).y;
-
-		// Update the indices
-		i32vec2Index.y += iDisplacement;
-		i32vec2NumMicroSteps.y = 0;
-
-		// Constraint the player's position within the screen boundary
-		Constraint(CPhysics2D::DIRECTION::UP);
-
-		// Iterate through all rows until the proposed row
-		// Check if the player will hit a tile; stop jump if so.
-		int iIndex_YAxis_Proposed = i32vec2Index.y;
-
-		if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP)
-		{
-			for (int i = iIndex_YAxis_OLD; i >= iIndex_YAxis_Proposed; i--)
+			// Translate the displacement from pixels to indices
+			int iDisplacement = (int)(v2Displacement.y / cSettings->TILE_HEIGHT);
+			int iDisplacement_MicroSteps = (int)((v2Displacement.y * cSettings->iWindowHeight) - iDisplacement) /
+				(int)cSettings->NUM_STEPS_PER_TILE_YAXIS;
+			if (iDisplacement_MicroSteps != 0)
 			{
-				// Change the player's index to the current i value
-				i32vec2Index.y = i;
-				// If the new position is not feasible, then revert to old position
-				if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+				iDisplacement++;
+			}
+
+			iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).y;
+
+			// Update the indices
+			i32vec2Index.y += iDisplacement;
+			i32vec2NumMicroSteps.y = 0;
+
+			// Constraint the player's position within the screen boundary
+			Constraint(CPhysics2D::DIRECTION::UP);
+
+			// Iterate through all rows until the proposed row
+			// Check if the player will hit a tile; stop jump if so.
+			int iIndex_YAxis_Proposed = i32vec2Index.y;
+
+			if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP)
+			{
+				for (int i = iIndex_YAxis_OLD; i >= iIndex_YAxis_Proposed; i--)
 				{
-					i32vec2Index.y = i + 1;
-					// Set the Physics to fall status
-					cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
-					break;
+					// Change the player's index to the current i value
+					i32vec2Index.y = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+					{
+						i32vec2Index.y = i + 1;
+						// Set the Physics to fall status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+						break;
+					}
+				}
+			}
+			else {
+				for (int i = iIndex_YAxis_OLD; i <= iIndex_YAxis_Proposed; i++)
+				{
+					// Change the player's index to the current i value
+					i32vec2Index.y = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+					{
+						i32vec2Index.y = i - 1;
+						// Set the Physics to fall status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+						break;
+					}
 				}
 			}
 		}
-		else {
-			for (int i = iIndex_YAxis_OLD; i <= iIndex_YAxis_Proposed; i++)
+		else if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_LEFT || cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_RIGHT)
+		{
+			// Store the current i32vec2Index.x
+			int iIndex_YAxis_OLD = i32vec2Index.x;
+
+			// Translate the displacement from pixels to indices
+			int iDisplacement = (int)(v2Displacement.x / cSettings->TILE_HEIGHT);
+			int iDisplacement_MicroSteps = (int)((v2Displacement.x * cSettings->iWindowHeight) - iDisplacement) /
+				(int)cSettings->NUM_STEPS_PER_TILE_YAXIS;
+			if (iDisplacement_MicroSteps != 0)
 			{
-				// Change the player's index to the current i value
-				i32vec2Index.y = i;
-				// If the new position is not feasible, then revert to old position
-				if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+				iDisplacement++;
+			}
+
+			iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).x;
+
+			// Update the indices
+			i32vec2Index.x += iDisplacement;
+			i32vec2NumMicroSteps.x = 0;
+
+			// Constraint the plaxer's position within the screen boundarx
+			Constraint(CPhysics2D::DIRECTION::UP);
+
+			// Iterate through all rows until the proposed row
+			// Check if the plaxer will hit a tile; stop jump if so.
+			int iIndex_YAxis_Proposed = i32vec2Index.x;
+
+			if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_RIGHT)
+			{
+				for (int i = iIndex_YAxis_OLD; i >= iIndex_YAxis_Proposed; i--)
 				{
-					i32vec2Index.y = i-1;
-					// Set the Physics to fall status
-					cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
-					break;
+					// Change the plaxer's index to the current i value
+					i32vec2Index.x = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+					{
+						i32vec2Index.x = i + 1;
+						// Set the Phxsics to fall status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+						break;
+					}
+				}
+			}
+			else {
+				for (int i = iIndex_YAxis_OLD; i <= iIndex_YAxis_Proposed; i++)
+				{
+					// Change the plaxer's index to the current i value
+					i32vec2Index.x = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::UP) == false)
+					{
+						i32vec2Index.x = i - 1;
+						// Set the Phxsics to fall status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+						break;
+					}
 				}
 			}
 		}
@@ -736,73 +824,145 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 		// Get the displacement from the physics engine
 		glm::vec2 v2Displacement = cPhysics2D.GetDisplacement();
 
-		// Store the current i32vec2Index.y
-		int iIndex_YAxis_OLD = i32vec2Index.y;
 
-		// Translate the displacement from pixels to indices
-		int iDisplacement = (int)(v2Displacement.y / cSettings->TILE_HEIGHT);
-		int iDisplacement_MicroSteps = (int)((v2Displacement.y * cSettings->iWindowHeight) - iDisplacement) /
-										(int)cSettings->NUM_STEPS_PER_TILE_YAXIS;
-		if (iDisplacement_MicroSteps > 0)
+		if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP || cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_DOWN)
 		{
-			iDisplacement++;
-		}
+			// Store the current i32vec2Index.y
+			int iIndex_YAxis_OLD = i32vec2Index.y;
 
-		// Update the indices
-		i32vec2Index.y += iDisplacement;
-		i32vec2NumMicroSteps.y = 0;
-
-		iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).y;
-
-		// Constraint the player's position within the screen boundary
-		Constraint(CPhysics2D::DIRECTION::DOWN);
-
-
-		// Iterate through all rows until the proposed row
-		// Check if the player will hit a tile; stop fall if so.
-		int iIndex_YAxis_Proposed = i32vec2Index.y;
-
-		if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP)
-		{
-			//if I = 22, I < 24, i++ (WIll fall backwards, towards UP GRAVITY
-			for (int i = iIndex_YAxis_OLD; i <= iIndex_YAxis_Proposed; i++)
+			// Translate the displacement from pixels to indices
+			int iDisplacement = (int)(v2Displacement.y / cSettings->TILE_HEIGHT);
+			int iDisplacement_MicroSteps = (int)((v2Displacement.y * cSettings->iWindowHeight) - iDisplacement) /
+				(int)cSettings->NUM_STEPS_PER_TILE_YAXIS;
+			if (iDisplacement_MicroSteps > 0)
 			{
-				// Change the player's index to the current i value
-				i32vec2Index.y = i;
-				// If the new position is not feasible, then revert to old position
-				if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+				iDisplacement++;
+			}
+
+			// Update the indices
+			i32vec2Index.y += iDisplacement;
+			i32vec2NumMicroSteps.y = 0;
+
+			iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).y;
+
+			// Constraint the player's position within the screen boundary
+			Constraint(CPhysics2D::DIRECTION::DOWN);
+
+
+			// Iterate through all rows until the proposed row
+			// Check if the player will hit a tile; stop fall if so.
+			int iIndex_YAxis_Proposed = i32vec2Index.y;
+
+			if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_UP)
+			{
+				//if I = 22, I < 24, i++ (WIll fall backwards, towards UP GRAVITY
+				for (int i = iIndex_YAxis_OLD; i <= iIndex_YAxis_Proposed; i++)
 				{
-					// Revert to the previous position
-					if (i != iIndex_YAxis_OLD)
-						i32vec2Index.y = i - 1;
-					// Set the Physics to idle status
-					cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
-					break;
+					// Change the player's index to the current i value
+					i32vec2Index.y = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+					{
+						// Revert to the previous position
+						if (i != iIndex_YAxis_OLD)
+							i32vec2Index.y = i - 1;
+						// Set the Physics to idle status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+						break;
+					}
+				}
+			}
+			else {
+				for (int i = iIndex_YAxis_OLD; i >= iIndex_YAxis_Proposed; i--)
+				{
+					// Change the player's index to the current i value
+					i32vec2Index.y = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+					{
+						// Revert to the previous position
+						if (i != iIndex_YAxis_OLD)
+							i32vec2Index.y = i + 1;
+						// Set the Physics to idle status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+						break;
+					}
 				}
 			}
 		}
-		else {
-			for (int i = iIndex_YAxis_OLD; i >= iIndex_YAxis_Proposed; i--)
+		else if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_LEFT || cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_RIGHT)
+		{
+			// Store the current i32vec2Index.x
+			int iIndex_XAxis_OLD = i32vec2Index.x;
+
+			// Translate the displacement from pixels to indices
+			int iDisplacement = (int)(v2Displacement.x / cSettings->TILE_HEIGHT);
+			int iDisplacement_MicroSteps = (int)((v2Displacement.x * cSettings->iWindowHeight) - iDisplacement) /
+				(int)cSettings->NUM_STEPS_PER_TILE_XAXIS;
+			if (iDisplacement_MicroSteps > 0)
 			{
-				// Change the player's index to the current i value
-				i32vec2Index.y = i;
-				// If the new position is not feasible, then revert to old position
-				if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+				iDisplacement++;
+			}
+
+			// Update the indices
+			i32vec2Index.x += iDisplacement;
+			i32vec2NumMicroSteps.x = 0;
+
+			iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).x;
+
+			// Constraint the plaxer's position within the screen boundarx
+			Constraint(CPhysics2D::DIRECTION::DOWN);
+
+
+			// Iterate through all rows until the proposed row
+			// Check if the plaxer will hit a tile; stop fall if so.
+			int iIndex_XAxis_Proposed = i32vec2Index.x;
+
+			if (cPhysics2D.GetGravityDirection() == CPhysics2D::GRAVITY_RIGHT)
+			{
+				//if I = 22, I < 24, i++ (WIll fall backwards, towards UP GRAVITX
+				for (int i = iIndex_XAxis_OLD; i <= iIndex_XAxis_Proposed; i++)
 				{
-					// Revert to the previous position
-					if (i != iIndex_YAxis_OLD)
-						i32vec2Index.y = i + 1;
-					// Set the Physics to idle status
-					cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
-					break;
+					// Change the plaxer's index to the current i value
+					i32vec2Index.x = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+					{
+						// Revert to the previous position
+						if (i != iIndex_XAxis_OLD)
+							i32vec2Index.x = i - 1;
+						// Set the Phxsics to idle status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+						break;
+					}
+				}
+			}
+			else {
+				for (int i = iIndex_XAxis_OLD; i >= iIndex_XAxis_Proposed; i--)
+				{
+					// Change the plaxer's index to the current i value
+					i32vec2Index.x = i;
+					// If the new position is not feasible, then revert to old position
+					if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
+					{
+						// Revert to the previous position
+						if (i != iIndex_XAxis_OLD)
+							i32vec2Index.x = i + 1;
+						// Set the Phxsics to idle status
+						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+						break;
+					}
 				}
 			}
 		}
+
 
 		if (PlayerIsOnBottomRow())
 		{
 			cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
 		}
+
+		
 	
 	}
 }
