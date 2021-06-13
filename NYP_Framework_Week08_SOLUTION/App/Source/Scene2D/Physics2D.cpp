@@ -44,6 +44,11 @@ bool CPhysics2D::Init(void)
 	return true;
 }
 
+void CPhysics2D::setGravityMagnitude(float grav)
+{
+	GRAVITY_MAGNITUDE = grav;
+}
+
 // Set methods
 // Set Initial velocity
 void CPhysics2D::SetInitialVelocity(const glm::vec2 v2InitialVelocity)

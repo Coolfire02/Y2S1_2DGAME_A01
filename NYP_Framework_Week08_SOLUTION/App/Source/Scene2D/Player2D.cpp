@@ -21,6 +21,8 @@ using namespace std;
 // Include Game Manager
 #include "GameManager.h"
 
+#include "Bomb2D.h"
+
 /**
  @brief Constructor This constructor has protected access modifier as this class will be a Singleton
  */
@@ -42,6 +44,8 @@ CPlayer2D::CPlayer2D(void)
 
 	// Initialise vec2UVCoordinate
 	vec2UVCoordinate = glm::vec2(0.0f);
+
+	name = "Player";
 }
 
 /**
@@ -124,6 +128,8 @@ bool CPlayer2D::Init(void)
 	cPhysics2D.Init();
 	cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
 
+	cEntityManager2D = CEntityManager2D::GetInstance();
+
 	// Get the handler to the CInventoryManager instance
 	cInventoryManager = CInventoryManager::GetInstance();
 	// Add a Lives icon as one of the inventory items
@@ -181,6 +187,23 @@ void CPlayer2D::Update(const double dElapsedTime)
 	{
 		cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
 	}
+
+	
+
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_F))
+	{
+		cInventoryItem = cInventoryManager->GetItem("Bomb");
+		if (cInventoryItem->GetCount() > 0)
+		{
+			cPhysics2D.SetInitialVelocity(glm::vec2(0.f, 0.1f));
+			cInventoryItem->Remove(1);
+			CBomb2D* bomb = new CBomb2D();
+			bomb->Init(cPhysics2D.GetGravityDirection(), i32vec2Index.x, i32vec2Index.y);
+			bomb->SetShader("2DColorShader");
+			cEntityManager2D->AddEntity(bomb);
+		}
+		
+	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_A))
 	{
 		Move(CPhysics2D::DIRECTION::LEFT, dElapsedTime);
@@ -191,9 +214,9 @@ void CPlayer2D::Update(const double dElapsedTime)
 	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_W))
 	{
-		cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT);
+		cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_RIGHT);
 		cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
-		cMap2D->SetCurrentLevel(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT);
+		cMap2D->SetCurrentLevel(cPhysics2D.GetGravityDirection());
 
 		glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
 		relativeDir *= 0.1 ;
@@ -524,7 +547,6 @@ void CPlayer2D::Constraint(CPhysics2D::DIRECTION eDirection)
  */
 bool CPlayer2D::CheckPosition(CPhysics2D::DIRECTION eDirection)
 {
-
 	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(eDirection);
 	if (relativeDir.x == -1)
 	{
@@ -613,19 +635,19 @@ bool CPlayer2D::PlayerIsOnBottomRow() {
 	switch (cPhysics2D.GetGravityDirection())
 	{
 	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_DOWN:
-		if (i32vec2Index.y == 0)
+		if (i32vec2Index.y <= 0)
 			return true;
 		break;
 	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP:
-		if (i32vec2Index.y == cSettings->NUM_TILES_YAXIS - 1)
+		if (i32vec2Index.y >= cSettings->NUM_TILES_YAXIS - 1)
 			return true;
 		break;
 	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT:
-		if (i32vec2Index.x == 0)
+		if (i32vec2Index.x <= 0)
 			return true;
 		break;
 	case CPhysics2D::GRAVITY_DIRECTION::GRAVITY_RIGHT:
-		if (i32vec2Index.x == cSettings->NUM_TILES_XAXIS - 1)
+		if (i32vec2Index.x >= cSettings->NUM_TILES_XAXIS - 1)
 			return true;
 		break;
 	}
@@ -974,32 +996,38 @@ void CPlayer2D::InteractWithMap(void)
 {
 	switch (cMap2D->GetMapInfo(i32vec2Index.y, i32vec2Index.x))
 	{
-	case 2:
-		// Erase the tree from this position
+	case CMap2D::TILE_ID::BOMB_SMALL:
 		cMap2D->SetMapInfo(i32vec2Index.y, i32vec2Index.x, 0);
-		// Increase the Tree by 1
-		cInventoryItem = cInventoryManager->GetItem("Tree");
+		cInventoryItem = cInventoryManager->GetItem("Bomb");
 		cInventoryItem->Add(1);
-		// Play a bell sound
 		cSoundController->PlaySoundByID(1);
 		break;
-	case 10:
-		// Increase the lives by 1
-		cInventoryItem = cInventoryManager->GetItem("Lives");
-		cInventoryItem->Add(1);
-		// Erase the life from this position
-		cMap2D->SetMapInfo(i32vec2Index.y, i32vec2Index.x, 0);
-		break;
-	case 20:
-		// Decrease the health by 1
-		cInventoryItem = cInventoryManager->GetItem("Health");
-		cInventoryItem->Remove(1);
-		break;
-	case 21:
-		// Increase the health
-		cInventoryItem = cInventoryManager->GetItem("Health");
-		cInventoryItem->Add(1);
-		break;
+	//case 2:
+	//	// Erase the tree from this position
+	//	cMap2D->SetMapInfo(i32vec2Index.y, i32vec2Index.x, 0);
+	//	// Increase the Tree by 1
+	//	cInventoryItem = cInventoryManager->GetItem("Tree");
+	//	cInventoryItem->Add(1);
+	//	// Play a bell sound
+	//	cSoundController->PlaySoundByID(1);
+	//	break;
+	//case 10:
+	//	// Increase the lives by 1
+	//	cInventoryItem = cInventoryManager->GetItem("Lives");
+	//	cInventoryItem->Add(1);
+	//	// Erase the life from this position
+	//	cMap2D->SetMapInfo(i32vec2Index.y, i32vec2Index.x, 0);
+	//	break;
+	//case 20:
+	//	// Decrease the health by 1
+	//	cInventoryItem = cInventoryManager->GetItem("Health");
+	//	cInventoryItem->Remove(1);
+	//	break;
+	//case 21:
+	//	// Increase the health
+	//	cInventoryItem = cInventoryManager->GetItem("Health");
+	//	cInventoryItem->Add(1);
+	//	break;
 	case 99:
 		// Level has been completed
 		CGameManager::GetInstance()->bLevelCompleted = true;

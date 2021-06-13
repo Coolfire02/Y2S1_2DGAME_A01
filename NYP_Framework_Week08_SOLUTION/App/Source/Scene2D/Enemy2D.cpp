@@ -38,6 +38,25 @@ CEnemy2D::CEnemy2D(void)
 
 	// Initialise vec2UVCoordinate
 	vec2UVCoordinate = glm::vec2(0.0f);
+
+	name = "Enemy";
+}
+
+void CEnemy2D::CollidedWith(CEntity2D* entity)
+{
+	if (entity->name == "Bomb")
+	{
+		CInventoryItem* eHealth = cInventoryManager->GetItem("EnemyHealth");
+		eHealth->Remove(10);
+		std::cout << "Ehealth:" << eHealth->GetCount() << std::endl;
+		entity->dead = true;
+		if (eHealth->GetCount() <= 0)
+		{
+			this->dead = true;
+			
+			CGameManager::GetInstance()->bLevelCompleted = true;
+		}
+	}
 }
 
 /**
@@ -64,6 +83,9 @@ bool CEnemy2D::Init(ENEMY_TYPE type)
 	this->enemySpeed = 3.f;
 	// Get the handler to the CSettings instance
 	cSettings = CSettings::GetInstance();
+
+	cInventoryManager = CInventoryManager::GetInstance();
+
 
 	// Get the handler to the CMap2D instance
 	cMap2D = CMap2D::GetInstance();

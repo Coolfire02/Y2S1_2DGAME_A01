@@ -63,6 +63,7 @@ public:
 	float GetTime(void) const;							// Get Time
 	STATUS GetStatus(void) const;						// Get Status
 	GRAVITY_DIRECTION GetGravityDirection(void) const;	// Get Gravity Direction
+	void setGravityMagnitude(float mag);
 	bool ReachedPeakOfJump(void) const;					// Checks if Peak of Jump has been found relative to Gravity Direction
 
 	glm::vec2 GetGravityDirVector(void) const;			// Get Gravity Direction's Vector

@@ -37,6 +37,9 @@ class CMap2D;
 // Include InventoryManager
 #include "InventoryManager.h"
 
+// Include EntityManager
+#include "EntityManager.h"
+
 #include "ItemSpawner.h"
 
 // Include SoundController
@@ -72,6 +75,8 @@ protected:
 
 	// Keyboard Controller singleton instance
 	CKeyboardController* cKeyboardController;
+
+	CEntityManager2D* cEntityManager2D;
 
 	// Physics
 	CPhysics2D cPhysics2D;

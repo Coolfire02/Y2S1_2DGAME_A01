@@ -40,9 +40,8 @@ class CMap2D;
 // Include SoundController
 #include "..\SoundController\SoundController.h"
 
-class CEnemy2D : public CSingletonTemplate<CEnemy2D>, public CEntity2D
+class CEnemy2D : public CEntity2D
 {
-	friend CSingletonTemplate<CEnemy2D>;
 
 public:
 
@@ -66,6 +65,14 @@ public:
 	// PostRender
 	void PostRender(void);
 
+	void CollidedWith(CEntity2D*);
+
+	// Constructor
+	CEnemy2D(void);
+
+	// Destructor
+	~CEnemy2D(void);
+
 protected:
 
 	glm::i32vec2 i32vec2OldIndex;
@@ -76,6 +83,11 @@ protected:
 
 	// Handler to the CMap2D instance
 	CMap2D* cMap2D;
+
+	// InventoryManager
+	CInventoryManager* cInventoryManager;
+	// InventoryItem
+	CInventoryItem* cInventoryItem;
 
 	// Physics
 	CPhysics2D cPhysics2D;
@@ -88,12 +100,6 @@ protected:
 
 	// Handler to the CSoundController
 	CSoundController* cSoundController;
-
-	// Constructor
-	CEnemy2D(void);
-
-	// Destructor
-	virtual ~CEnemy2D(void);
 
 	// Let enemy interact with the map
 	void InteractWithMap(void);

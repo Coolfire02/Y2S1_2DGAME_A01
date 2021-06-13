@@ -42,6 +42,9 @@
 // Game Manager
 #include "GameManager.h"
 
+// Entity Manager
+#include "EntityManager.h"
+
 // Include SoundController
 #include "..\SoundController\SoundController.h"
 
@@ -77,6 +80,9 @@ protected:
 	// The handler containing the single instance of ItemSpawner2D;
 	CItemSpawner2D* cItemSpawner2D;
 
+	// The handler containing the single instance of EntityManager2D;
+	CEntityManager2D* cEntityManager2D;
+
 	// Keyboard Controller singleton instance
 	CKeyboardController* cKeyboardController;
 
@@ -91,6 +97,8 @@ protected:
 
 	// Handler to the CSoundController
 	CSoundController* cSoundController;
+
+	
 
 	// Constructor
 	CScene2D(void);

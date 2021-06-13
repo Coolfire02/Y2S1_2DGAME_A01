@@ -47,11 +47,7 @@ CScene2D::~CScene2D(void)
 	// We won't delete this since it was created elsewhere
 	cKeyboardController = NULL;
 	
-	if (cPlayer2D)
-	{
-		cPlayer2D->Destroy();
-		cPlayer2D = NULL;
-	}
+	cEntityManager2D->Exit();
 
 	if (cMap2D)
 	{
@@ -91,11 +87,11 @@ bool CScene2D::Init(void)
 	//	// The loading of a map has failed. Return false
 	//	return false;
 	//}
-	//if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_RIGHT.csv", 2) == false)
-	//{
-	//	// The loading of a map has failed. Return false
-	//	return false;
-	//}
+	if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_RIGHT.csv", 2) == false)
+	{
+		// The loading of a map has failed. Return false
+		return false;
+	}
 	if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_LEFT.csv", 3) == false)
 	{
 		// The loading of a map has failed. Return false
@@ -107,6 +103,9 @@ bool CScene2D::Init(void)
 	CShaderManager::GetInstance()->Use("2DColorShader");
 	CShaderManager::GetInstance()->activeShader->setInt("texture1", 0);
 	
+	cEntityManager2D = CEntityManager2D::GetInstance();
+	cEntityManager2D->Init();
+
 	// Create and initialise the CPlayer2D
 	cPlayer2D = CPlayer2D::GetInstance();
 	// Pass shader to cPlayer2D
@@ -119,7 +118,7 @@ bool CScene2D::Init(void)
 	}
 
 	// Create and initialise the cEnemy2D
-	cEnemy2D = CEnemy2D::GetInstance();
+	cEnemy2D = new CEnemy2D();
 	// Pass shader to cEnemy2D
 	cEnemy2D->SetShader("2DColorShader");
 	// Initialise the instance
@@ -128,6 +127,9 @@ bool CScene2D::Init(void)
 		cout << "Failed to load cEnemy2D" << endl;
 		return false;
 	}
+
+	cEntityManager2D->AddEntity(cPlayer2D);
+	cEntityManager2D->AddEntity(cEnemy2D);
 
 
 	// Setup the shaders
@@ -165,9 +167,9 @@ bool CScene2D::Init(void)
 bool CScene2D::Update(const double dElapsedTime)
 {
 	// Call the cPlayer2D's update method before Map2D as we want to capture the inputs before map2D update
-	cPlayer2D->Update(dElapsedTime);
 
-	cEnemy2D->Update(dElapsedTime);
+	//Collider - To be moved into separate class when have time
+	cEntityManager2D->Update(dElapsedTime);
 	 
 	// Call the Map2D's update method
 	cMap2D->Update(dElapsedTime);
@@ -236,19 +238,7 @@ void CScene2D::PreRender(void)
  */
 void CScene2D::Render(void)
 {
-	// Call the CPlayer2D's PreRender()
-	cPlayer2D->PreRender();
-	// Call the CPlayer2D's Render()
-	cPlayer2D->Render();
-	// Call the CPlayer2D's PostRender()
-	cPlayer2D->PostRender();
-
-	// Call the CPlayer2D's PreRender()
-	cEnemy2D->PreRender();
-	// Call the CPlayer2D's Render()
-	cEnemy2D->Render();
-	// Call the CPlayer2D's PostRender()
-	cEnemy2D->PostRender();
+	cEntityManager2D->RenderEntities();
 	
 	// Call the Map2D's PreRender()
 	cMap2D->PreRender();

@@ -89,6 +89,12 @@ bool CGUI_Scene2D::Init(void)
 	cInventoryItem = cInventoryManager->Add("Tree", "Image/Scene2D_TreeTile.tga", 5, 0);
 	cInventoryItem->vec2Size = glm::vec2(25, 25);
 
+	cInventoryItem = cInventoryManager->Add("Bomb", "Image/scene2d_bomb.tga", 5, 0);
+	cInventoryItem->vec2Size = glm::vec2(25, 25);
+
+	cInventoryItem = cInventoryManager->Add("EnemyHealth", "Image/scene2d_golemenemy_icon.png", 100, 100);
+	cInventoryItem->vec2Size = glm::vec2(25, 25);
+
 	return true;
 }
 
@@ -139,11 +145,27 @@ void CGUI_Scene2D::Update(const double dElapsedTime)
 		ImVec2(cInventoryItem->vec2Size.x, cInventoryItem->vec2Size.y),
 		ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::SameLine();
-	ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
 			ImGui::ProgressBar(cInventoryItem->GetCount() / 
 				(float)cInventoryItem->GetMaxCount(), ImVec2(100.0f, 20.0f));
 		ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::End();
+
+	ImGui::Begin("EnemyHealth", NULL, healthWindowFlags);
+	ImGui::SetWindowPos(ImVec2(25.0f, 50.0f));
+	ImGui::SetWindowSize(ImVec2(100.0f, 25.0f));
+	cInventoryItem = cInventoryManager->GetItem("EnemyHealth");
+	ImGui::Image((void*)(intptr_t)cInventoryItem->GetTextureID(),
+		ImVec2(cInventoryItem->vec2Size.x, cInventoryItem->vec2Size.y),
+		ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::SameLine();
+	ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+	ImGui::ProgressBar(cInventoryItem->GetCount() /
+		(float)cInventoryItem->GetMaxCount(), ImVec2(100.0f, 20.0f));
+	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::End();
 
@@ -169,7 +191,7 @@ void CGUI_Scene2D::Update(const double dElapsedTime)
 	ImGui::End();
 
 	// Render the inventory items
-	cInventoryItem = cInventoryManager->GetItem("Tree");
+	cInventoryItem = cInventoryManager->GetItem("Bomb");
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 1.0f, 1.0f));  // Set a background color
 	ImGuiWindowFlags inventoryWindowFlags = ImGuiWindowFlags_AlwaysAutoResize |
 		ImGuiWindowFlags_NoTitleBar |
@@ -185,7 +207,7 @@ void CGUI_Scene2D::Update(const double dElapsedTime)
 		ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::SameLine();
 	ImGui::SetWindowFontScale(1.5f);
-	ImGui::TextColored(ImVec4(1, 1, 0, 1), "Tree: %d / %d",
+	ImGui::TextColored(ImVec4(1, 1, 0, 1), "Bombs: %d / %d",
 		cInventoryItem->GetCount(), cInventoryItem->GetMaxCount());
 	ImGui::End();
 	ImGui::PopStyleColor();
