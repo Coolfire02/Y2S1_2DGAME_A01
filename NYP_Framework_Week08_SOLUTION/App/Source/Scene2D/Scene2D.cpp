@@ -71,7 +71,7 @@ bool CScene2D::Init(void)
 	// Set a shader to this class
 	cMap2D->SetShader("2DShader");
 	// Initialise the instance
-	if (cMap2D->Init(4) == false)
+	if (cMap2D->Init(5) == false)
 	{
 		cout << "Failed to load CMap2D" << endl;
 		return false;
@@ -82,11 +82,11 @@ bool CScene2D::Init(void)
 		// The loading of a map has failed. Return false
 		return false;
 	}
-	//if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_UP.csv", 1) == false)
-	//{
-	//	// The loading of a map has failed. Return false
-	//	return false;
-	//}
+	if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_UP.csv", 1) == false)
+	{
+		// The loading of a map has failed. Return false
+		return false;
+	}
 	if (cMap2D->LoadMap("Maps/DM2213_Map_Level_01_RIGHT.csv", 2) == false)
 	{
 		// The loading of a map has failed. Return false
@@ -198,7 +198,7 @@ bool CScene2D::Update(const double dElapsedTime)
 	// Check if the game should go to the next level
 	if (cGameManager->bLevelCompleted == true)
 	{
-		cMap2D->SetCurrentLevel(cMap2D->GetCurrentLevel()+1);
+		cMap2D->SetCurrentLevel(4);
 		cGameManager->bLevelCompleted = false;
 	}
 

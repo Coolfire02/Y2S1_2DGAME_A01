@@ -5,6 +5,8 @@
  */
 #include "Player2D.h"
 
+#include "System/MyMath.h"
+
 #include <iostream>
 using namespace std;
 
@@ -31,6 +33,9 @@ CPlayer2D::CPlayer2D(void)
 	, cKeyboardController(NULL)
 	, cInventoryManager(NULL)
 	, cInventoryItem(NULL)
+	, bombThrowCD(0.0f)
+	, jumpBoostCD(0.0f)
+	, dJumpCount(0)
 	, cItemSpawner(NULL)
 	, cSoundController(NULL)
 {
@@ -82,6 +87,8 @@ bool CPlayer2D::Init(void)
 	// Reset all keys since we are starting a new game
 	cKeyboardController->Reset();
 
+	nextSwitchCD = Math::RandFloatMinMax(12.5f, 20.f);
+
 	// Get the handler to the CSettings instance
 	cSettings = CSettings::GetInstance();
 
@@ -114,10 +121,10 @@ bool CPlayer2D::Init(void)
 	}
 	
 	//CS: Create the animated sprite and setup the animation 
-	animatedSprites = CMeshBuilder::GenerateSpriteAnimation(3, 3, cSettings->TILE_WIDTH, cSettings->TILE_HEIGHT);
-	animatedSprites->AddAnimation("idle", 0, 2);
-	animatedSprites->AddAnimation("right", 3, 5);
-	animatedSprites->AddAnimation("left", 6, 8);
+	animatedSprites = CMeshBuilder::GenerateSpriteAnimation(3, 4, cSettings->TILE_WIDTH, cSettings->TILE_HEIGHT);
+	animatedSprites->AddAnimation("idle", 0, 1);
+	animatedSprites->AddAnimation("right", 0, 3);
+	animatedSprites->AddAnimation("left", 4, 7);
 	//CS: Play the "idle" animation as default
 	animatedSprites->PlayAnimation("idle", -1, 1.0f);
 
@@ -128,6 +135,14 @@ bool CPlayer2D::Init(void)
 	cPhysics2D.Init();
 	cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
 
+	/*cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+
+	if (Math::RandIntMinMax(0, 1) == 0)
+	{
+		cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::POWERUP_DOUBLEJUMP, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+
+	}*/
+
 	cEntityManager2D = CEntityManager2D::GetInstance();
 
 	// Get the handler to the CInventoryManager instance
@@ -137,7 +152,7 @@ bool CPlayer2D::Init(void)
 	cInventoryItem->vec2Size = glm::vec2(25, 25);
 
 	// Add a Health icon as one of the inventory items
-	cInventoryItem = cInventoryManager->Add("Health", "Image/Scene2D_Health.tga", 100, 100);
+	cInventoryItem = cInventoryManager->Add("Health", "Image/Scene2D_Health.tga", 1000, 1000);
 	cInventoryItem->vec2Size = glm::vec2(25, 25);
 
 	// Get the handler to the CSoundController
@@ -151,36 +166,114 @@ bool CPlayer2D::Init(void)
  */
 void CPlayer2D::Update(const double dElapsedTime)
 {
-	static CPhysics2D::STATUS stat;
-	switch (cPhysics2D.GetStatus())
+	cInventoryItem = cInventoryManager->GetItem("DoubleJump");
+	if (cInventoryItem->GetCount() > 0)
 	{
-	case CPhysics2D::STATUS::FALL:
-		if(stat != cPhysics2D.GetStatus())
-			std::cout << "STATUS_FALLING" << std::endl;
-		break;
-	case CPhysics2D::STATUS::IDLE:
-		if (stat != cPhysics2D.GetStatus())
-			std::cout << "STATUS_IDLE" << std::endl;
-		break;
-	case CPhysics2D::STATUS::JUMP:
-		if (stat != cPhysics2D.GetStatus())
-			std::cout << "STATUS_JUMP" << std::endl;
-		break;
+		jumpBoostCD += dElapsedTime * 3;
+		if (jumpBoostCD >= 1.0)
+		{
+			jumpBoostCD = 0.0;
+			cInventoryItem->Remove(1);
+		}
 	}
-	if (stat != cPhysics2D.GetStatus())
-		stat = cPhysics2D.GetStatus();
-	// Get keyboard updates
-	if (cKeyboardController->IsKeyDown(GLFW_KEY_SPACE))
+	if (autoSpawnBombCD > 0.0)
 	{
+		autoSpawnBombCD -= dElapsedTime;
+		unsigned int a, b;
+		if (autoSpawnBombCD <= 0)
+		{
+			if (!cMap2D->FindValue(CMap2D::TILE_ID::BOMB_SMALL, a, b))
+			{
+				autoSpawnBombCD = Math::RandFloatMinMax(2.f, 5.f);
+				cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+			}
+		}
+		
+	}
+
+	if (bombThrowCD > 0.0)
+	{
+		bombThrowCD -= dElapsedTime;
+	}
+	if (jumpCD > 0.0)
+	{
+		jumpCD -= dElapsedTime;
+	}
+	if (nextSwitchCD > 0.0)
+	{
+		nextSwitchCD -= dElapsedTime;
+		if (nextSwitchCD <= 0)
+		{
+			cMap2D->ClearInteractables();
+			nextSwitchCD = Math::RandFloatMinMax(5.5f, 18.f);
+			std::vector<int> nums;
+			nums.push_back(0);
+			nums.push_back(1);
+			nums.push_back(2);
+			nums.push_back(3);
+			nums.erase(nums.begin() + (int)cPhysics2D.GetGravityDirection());
+			switch (nums.at(Math::RandIntMinMax(0, 2)))
+			{
+			case 0:
+				cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_DOWN);
+				break;
+			case 1:
+				cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_UP);
+				break;
+			case 2:
+				cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_RIGHT);
+				break;
+			case 3:
+				cPhysics2D.SetGravityDirection(CPhysics2D::GRAVITY_DIRECTION::GRAVITY_LEFT);
+				break;
+			}
+			cPhysics2D.SetStatus(CPhysics2D::STATUS::FALL);
+			cMap2D->SetCurrentLevel(cPhysics2D.GetGravityDirection());
+
+			cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+			
+			if (Math::RandIntMinMax(0, 1) == 0)
+			{
+				cItemSpawner->SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::POWERUP_DOUBLEJUMP, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+			
+			}
+
+			glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
+			relativeDir *= 0.1;
+			cPhysics2D.SetInitialVelocity(relativeDir);
+		}
+	}
+	// Get keyboard updates
+	if (cKeyboardController->IsKeyDown(GLFW_KEY_SPACE) && jumpCD <= 0.0)
+	{
+		jumpCD = 0.15f;
 		if (cPhysics2D.GetStatus() == CPhysics2D::STATUS::IDLE)
 		{
 			cPhysics2D.SetStatus(CPhysics2D::STATUS::JUMP);
+			dJumpCount = 1;
 
 			glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
 			relativeDir *= 0.33;
 			cPhysics2D.SetInitialVelocity(relativeDir);
 			// Play a sound for jump
 			cSoundController->PlaySoundByID(3);
+		}
+		else if (cPhysics2D.GetStatus() == CPhysics2D::STATUS::JUMP ||
+			cPhysics2D.GetStatus() == CPhysics2D::STATUS::FALL && dJumpCount < 2
+			)
+		{
+			cInventoryItem = cInventoryManager->GetItem("DoubleJump");
+			if (cInventoryItem->GetCount() > 0)
+			{
+				dJumpCount += 1;
+				cPhysics2D.SetStatus(CPhysics2D::STATUS::JUMP);
+
+				glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP);
+				relativeDir *= 0.33;
+				cPhysics2D.SetInitialVelocity(relativeDir);
+				// Play a sound for jump
+				cSoundController->PlaySoundByID(3);
+			}
 		}
 	}
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_R))
@@ -193,8 +286,9 @@ void CPlayer2D::Update(const double dElapsedTime)
 	if (cKeyboardController->IsKeyDown(GLFW_KEY_F))
 	{
 		cInventoryItem = cInventoryManager->GetItem("Bomb");
-		if (cInventoryItem->GetCount() > 0)
+		if (cInventoryItem->GetCount() > 0 && bombThrowCD <= 0)
 		{
+			bombThrowCD = 0.5f;
 			cPhysics2D.SetInitialVelocity(glm::vec2(0.f, 0.1f));
 			cInventoryItem->Remove(1);
 			CBomb2D* bomb = new CBomb2D();
@@ -248,6 +342,11 @@ void CPlayer2D::Update(const double dElapsedTime)
 	vec2UVCoordinate.y = cSettings->ConvertIndexToUVSpace(cSettings->y, i32vec2Index.y, false, i32vec2NumMicroSteps.y*cSettings->MICRO_STEP_YAXIS);
 }
 
+void CPlayer2D::SwitchToMap(CPhysics2D::GRAVITY_DIRECTION)
+{
+
+}
+
 /**
  @brief Set up the OpenGL display environment before rendering
  */
@@ -279,6 +378,7 @@ void CPlayer2D::Render(void)
 	transform = glm::translate(transform, glm::vec3(vec2UVCoordinate.x,
 													vec2UVCoordinate.y,
 													0.0f));
+	transform = glm::rotate(transform, 0.8f, glm::vec3(0, 0, 1));
 	// Update the shaders with the latest transform
 	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 	glUniform4fv(colorLoc, 1, glm::value_ptr(currentColor));
@@ -382,7 +482,7 @@ void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime
 		animatedSprites->PlayAnimation("left", -1, 1.0f);
 
 		//CS: Change Color
-		currentColor = glm::vec4(1.0, 0.0, 0.0, 1.0);
+	
 	}
 
 	else if (relativeDir.x == 1) // "D" Key
@@ -418,8 +518,7 @@ void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime
 		//CS: Play the "right" animation
 		animatedSprites->PlayAnimation("right", -1, 1.0f);
 
-		//CS: Change Color
-		currentColor = glm::vec4(1.0, 1.0, 0.0, 1.0);
+	
 	}
 
 	if (relativeDir.y == 1) // "W" Key
@@ -454,8 +553,6 @@ void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime
 		//CS: Play the "idle" animation
 		animatedSprites->PlayAnimation("idle", -1, 1.0f);
 
-		//CS: Change Color
-		currentColor = glm::vec4(0.0, 1.0, 1.0, 0.5);
 	}
 	else if (relativeDir.y == -1) // "S" Key
 	{
@@ -489,8 +586,7 @@ void CPlayer2D::Move(CPhysics2D::DIRECTION eDirection, const double dElapsedTime
 		//CS: Play the "idle" animation
 		animatedSprites->PlayAnimation("idle", -1, 1.0f);
 
-		//CS: Change Color
-		currentColor = glm::vec4(1.0, 0.0, 1.0, 0.5);
+
 	}
 
 }
@@ -688,7 +784,7 @@ bool CPlayer2D::IsMidAir(void)
 	glm::vec2 relativeDir = cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::DOWN);
 
 	if ((i32vec2NumMicroSteps.x == 0 || i32vec2NumMicroSteps.y == 0) &&
-		(cMap2D->GetMapInfo(i32vec2Index.y + relativeDir.y, i32vec2Index.x + relativeDir.x) == 0))
+		(cMap2D->GetMapInfo(i32vec2Index.y + relativeDir.y, i32vec2Index.x + relativeDir.x) <= CMap2D::TILE_ID::INTERACTABLES_END))
 	{
 		return true;
 	}
@@ -866,11 +962,11 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 			i32vec2NumMicroSteps.y = 0;
 
 			iDisplacement *= cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP).y;
-
+			
 			// Constraint the player's position within the screen boundary
 			Constraint(CPhysics2D::DIRECTION::DOWN);
-
-
+			
+			
 			// Iterate through all rows until the proposed row
 			// Check if the player will hit a tile; stop fall if so.
 			int iIndex_YAxis_Proposed = i32vec2Index.y;
@@ -890,6 +986,8 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 							i32vec2Index.y = i - 1;
 						// Set the Physics to idle status
 						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+
+						dJumpCount = 0;
 						break;
 					}
 				}
@@ -907,6 +1005,8 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 							i32vec2Index.y = i + 1;
 						// Set the Physics to idle status
 						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+
+						dJumpCount = 0;
 						break;
 					}
 				}
@@ -947,7 +1047,9 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 				{
 					// Change the plaxer's index to the current i value
 					i32vec2Index.x = i;
-					// If the new position is not feasible, then revert to old position
+		
+					
+
 					if (CheckPosition(CPhysics2D::DIRECTION::DOWN) == false)
 					{
 						// Revert to the previous position
@@ -955,6 +1057,8 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 							i32vec2Index.x = i - 1;
 						// Set the Phxsics to idle status
 						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+
+						dJumpCount = 0;
 						break;
 					}
 				}
@@ -972,6 +1076,8 @@ void CPlayer2D::UpdateJumpFall(const double dElapsedTime)
 							i32vec2Index.x = i + 1;
 						// Set the Phxsics to idle status
 						cPhysics2D.SetStatus(CPhysics2D::STATUS::IDLE);
+
+						dJumpCount = 0;
 						break;
 					}
 				}
@@ -1001,6 +1107,26 @@ void CPlayer2D::InteractWithMap(void)
 		cInventoryItem = cInventoryManager->GetItem("Bomb");
 		cInventoryItem->Add(1);
 		cSoundController->PlaySoundByID(1);
+		break;
+	case CMap2D::TILE_ID::POWERUP_DOUBLEJUMP:
+		cMap2D->SetMapInfo(i32vec2Index.y, i32vec2Index.x, 0);
+		cInventoryItem = cInventoryManager->GetItem("DoubleJump");
+		cInventoryItem->Add(100);
+		break;
+	case CMap2D::TILE_ID::ACID_DOWN:
+	case CMap2D::TILE_ID::ACID_UP:
+	case CMap2D::TILE_ID::ACID_LEFT:
+	case CMap2D::TILE_ID::ACID_RIGHT:
+		// Decrease the health by 1
+		cInventoryItem = cInventoryManager->GetItem("Health");
+		cInventoryItem->Remove(1);
+
+		if (cInventoryItem->GetCount() <= 0)
+		{
+			//Level Complete
+			CGameManager::GetInstance()->bLevelCompleted = true;
+		}
+
 		break;
 	//case 2:
 	//	// Erase the tree from this position

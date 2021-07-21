@@ -65,7 +65,6 @@ public:
 
 	void SpawnObjectOnRandomPlatform(CMap2D::TILE_ID type, glm::vec2 dir, CMap2D::TILE_ID idStart, CMap2D::TILE_ID idEnd);
 
-
 protected:
 
 	glm::i32vec2 i32vec2OldIndex;

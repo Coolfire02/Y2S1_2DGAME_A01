@@ -83,6 +83,7 @@ public:
 	// PrintSelf
 	void PrintSelf(void);
 
+
 protected:
 	// Variables for SUVAT calculations
 	glm::vec2 v2InitialVelocity;	// Initial velocity

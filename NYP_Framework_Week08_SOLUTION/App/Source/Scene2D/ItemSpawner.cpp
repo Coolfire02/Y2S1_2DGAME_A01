@@ -70,6 +70,14 @@ bool CItemSpawner2D::Init(void)
 
 	cMap2D = CMap2D::GetInstance();
 
+	SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::BOMB_SMALL, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+
+	if (Math::RandIntMinMax(0, 1) == 0)
+	{
+		SpawnObjectOnRandomPlatform(CMap2D::TILE_ID::POWERUP_DOUBLEJUMP, cPhysics2D.GetRelativeDirVector(CPhysics2D::DIRECTION::UP));
+
+	}
+
 
 	return true;
 }

@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <vector>
+#include <functional>
 using namespace std;
 
 /**
@@ -46,6 +47,9 @@ CMap2D::~CMap2D(void)
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+
+	// Delete AStar lists
+	DeleteAStarLists();
 
 	// Set this to NULL since it was created elsewhere, so we let it be deleted there.
 	cSettings = NULL;
@@ -81,6 +85,20 @@ bool CMap2D::Init(	const unsigned int uiNumLevels,
 	{
 		blockColor[i] = glm::vec4(1.0f, 1.0f, 1.f, 1.f);
 	}
+
+	// Initialise the variables for AStar
+	m_weight = 1;
+	m_startPos = glm::i32vec2(0, 0);
+	m_targetPos = glm::i32vec2(0, 0);
+	//m_size = cSettings->NUM_TILES_YAXIS* cSettings->NUM_TILES_XAXIS;
+
+	m_nrOfDirections = 4;
+	m_directions = { { -1, 0 }, { 1, 0 }, { 0, 1 }, { 0, -1 },
+						{ -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 } };
+
+	// Resize these 2 lists
+	m_cameFromList.resize(cSettings->NUM_TILES_YAXIS * cSettings->NUM_TILES_XAXIS);
+	m_closedList.resize(cSettings->NUM_TILES_YAXIS * cSettings->NUM_TILES_XAXIS, false);
 
 	// Store the map sizes in cSettings
 	uiCurLevel = 0;
@@ -122,6 +140,33 @@ bool CMap2D::Init(	const unsigned int uiNumLevels,
 		std::cout << "Failed to load bomb texture" << std::endl;
 		return false;
 	}
+	if (LoadTexture("Image/scene2d_jumpboost.png", POWERUP_DOUBLEJUMP) == false)
+	{
+		std::cout << "Failed to load bomb texture" << std::endl;
+		return false;
+	}
+
+	if (LoadTexture("Image/PoisonTop.png", ACID_UP) == false)
+	{
+		std::cout << "Failed to load Acid Texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/PoisonBottom.png", ACID_DOWN) == false)
+	{
+		std::cout << "Failed to load Acid Texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/PoisonLeft.png", ACID_LEFT) == false)
+	{
+		std::cout << "Failed to load Acid Texture" << std::endl;
+		return false;
+	}
+	if (LoadTexture("Image/PoisonRight.png", ACID_RIGHT) == false)
+	{
+		std::cout << "Failed to load Acid Texture" << std::endl;
+		return false;
+	}
+
 	// Load the tree texture
 	if (LoadTexture("Image/Scene2D_TreeTile.tga", 2) == false)
 	{
@@ -161,6 +206,21 @@ bool CMap2D::Init(	const unsigned int uiNumLevels,
 */
 void CMap2D::Update(const double dElapsedTime)
 {
+}
+
+void CMap2D::ClearInteractables()
+{
+	for (unsigned int uiRow = 0; uiRow < cSettings->NUM_TILES_YAXIS; uiRow++)
+	{
+		for (unsigned int uiCol = 0; uiCol < cSettings->NUM_TILES_XAXIS; uiCol++)
+		{
+			int id = arrMapInfo[uiCurLevel][uiRow][uiCol].value;
+			if (id > CMap2D::TILE_ID::INTERACTABLES_START && id <= CMap2D::TILE_ID::POWERUP_DOUBLEJUMP)
+			{
+				arrMapInfo[uiCurLevel][uiRow][uiCol].value = 0;
+			}
+		}
+	}
 }
 
 /**
@@ -486,4 +546,276 @@ void CMap2D::RenderTile(const unsigned int uiRow, const unsigned int uiCol)
 		quadMesh->Render();
 		glBindVertexArray(0);
 	}
+}
+
+/**
+ @brief Find a path
+ */
+std::vector<glm::i32vec2> CMap2D::PathFind(const glm::i32vec2& startPos, const glm::i32vec2& targetPos, HeuristicFunction heuristicFunc, int weight)
+{
+	// Check if the startPos and targetPost are blocked
+	if (isBlocked(startPos.y, startPos.x) ||
+		(isBlocked(targetPos.y, targetPos.x)))
+	{
+		cout << "Invalid start or target position." << endl;
+		// Return an empty path
+		std::vector<glm::i32vec2> path;
+		return path;
+	}
+	using namespace std::placeholders;
+	// Set up the variables and lists
+	m_startPos = startPos;
+	m_targetPos = targetPos;
+	m_weight = weight;
+	m_heuristic = std::bind(heuristicFunc, _1, _2, _3);
+
+	// Reset AStar lists
+	ResetAStarLists();
+
+	// Add the start pos to 2 lists
+	m_cameFromList[ConvertTo1D(m_startPos)].parent = m_startPos;
+	m_openList.push(Grid(m_startPos, 0));
+
+	unsigned int fNew, gNew, hNew;
+	glm::i32vec2 currentPos;
+
+	// Start the path finding...
+	while (!m_openList.empty())
+	{
+		// Get the node with the least f value
+		currentPos = m_openList.top().pos;
+		//cout << endl << "*** New position to check: " << currentPos.x << ", " << currentPos.y << endl;
+		//cout << "*** targetPos: " << m_targetPos.x << ", " << m_targetPos.y << endl;
+
+		// If the targetPos was reached, then quit this loop
+		if (currentPos == m_targetPos)
+		{
+			//cout << "=== Found the targetPos: " << m_targetPos.x << ", " << m_targetPos.y << endl;
+			while (m_openList.size() != 0)
+				m_openList.pop();
+			break;
+		}
+
+		m_openList.pop();
+		m_closedList[ConvertTo1D(currentPos)] = true;
+
+		// Check the neighbors of the current node
+		for (unsigned int i = 0; i < m_nrOfDirections; ++i)
+		{
+			const auto neighborPos = currentPos + m_directions[i];
+			const auto neighborIndex = ConvertTo1D(neighborPos);
+
+			//cout << "\t#" << i << ": Check this: " << neighborPos.x << ", " << neighborPos.y << ":\t";
+			if (!isValid(neighborPos) ||
+				isBlocked(neighborPos.y, neighborPos.x) ||
+				m_closedList[neighborIndex] == true)
+			{
+				//cout << "This position is not valid. Going to next neighbour." << endl;
+				continue;
+			}
+
+			gNew = m_cameFromList[ConvertTo1D(currentPos)].g + 1;
+			hNew = m_heuristic(neighborPos, m_targetPos, m_weight);
+			fNew = gNew + hNew;
+
+			if (m_cameFromList[neighborIndex].f == 0 || fNew < m_cameFromList[neighborIndex].f)
+			{
+				//cout << "Adding to Open List: " << neighborPos.x << ", " << neighborPos.y;
+				cout << ". [ f : " << fNew << ", g : " << gNew << ", h : " << hNew << "]" << endl;
+				m_openList.push(Grid(neighborPos, fNew));
+				m_cameFromList[neighborIndex] = { neighborPos, currentPos, fNew, gNew, hNew };
+			}
+			else
+			{
+				//cout << "Not adding this" << endl;
+			}
+		}
+		//system("pause");
+	}
+
+	return BuildPath();
+}
+
+/**
+ @brief Build a path
+ */
+std::vector<glm::i32vec2> CMap2D::BuildPath() const
+{
+	std::vector<glm::i32vec2> path;
+	auto currentPos = m_targetPos;
+	auto currentIndex = ConvertTo1D(currentPos);
+
+	while (!(m_cameFromList[currentIndex].parent == currentPos))
+	{
+		path.push_back(currentPos);
+		currentPos = m_cameFromList[currentIndex].parent;
+		currentIndex = ConvertTo1D(currentPos);
+	}
+
+	// If the path has only 1 entry, then it is the the target position
+	if (path.size() == 1)
+	{
+		// if m_startPos is next to m_targetPos, then having 1 path point is OK
+		if (m_nrOfDirections == 4)
+		{
+			if (abs(m_targetPos.y - m_startPos.y) + abs(m_targetPos.x - m_startPos.x) > 1)
+				path.clear();
+		}
+		else
+		{
+			if (abs(m_targetPos.y - m_startPos.y) + abs(m_targetPos.x - m_startPos.x) > 2)
+				path.clear();
+			else if (abs(m_targetPos.y - m_startPos.y) + abs(m_targetPos.x - m_startPos.x) > 1)
+				path.clear();
+		}
+	}
+	else
+		std::reverse(path.begin(), path.end());
+
+	return path;
+}
+
+/**
+ @brief Toggle the checks for diagonal movements
+ */
+void CMap2D::SetDiagonalMovement(const bool bEnable)
+{
+	m_nrOfDirections = (bEnable) ? 8 : 4;
+}
+
+/**
+ @brief Print out the details about this class instance in the console
+ */
+void CMap2D::PrintSelf(void) const
+{
+	cout << endl << "AStar::PrintSelf()" << endl;
+
+	for (unsigned uiLevel = 0; uiLevel < uiNumLevels; uiLevel++)
+	{
+		cout << "Level: " << uiLevel << endl;
+		for (unsigned uiRow = 0; uiRow < cSettings->NUM_TILES_YAXIS; uiRow++)
+		{
+			for (unsigned uiCol = 0; uiCol < cSettings->NUM_TILES_XAXIS; uiCol++)
+			{
+				cout.fill('0');
+				cout.width(3);
+				cout << arrMapInfo[uiLevel][uiRow][uiCol].value;
+				if (uiCol != cSettings->NUM_TILES_XAXIS - 1)
+					cout << ", ";
+				else
+					cout << endl;
+			}
+		}
+	}
+
+	cout << "m_openList: " << m_openList.size() << endl;
+	cout << "m_cameFromList: " << m_cameFromList.size() << endl;
+	cout << "m_closedList: " << m_closedList.size() << endl;
+
+	cout << "===== AStar::PrintSelf() =====" << endl;
+}
+
+/**
+ @brief Check if a position is valid
+ */
+bool CMap2D::isValid(const glm::i32vec2& pos) const
+{
+	//return (pos.x >= 0) && (pos.x < m_dimensions.x) &&
+	//	(pos.y >= 0) && (pos.y < m_dimensions.y);
+	return (pos.x >= 0) && (pos.x < cSettings->NUM_TILES_XAXIS) &&
+		(pos.y >= 0) && (pos.y < cSettings->NUM_TILES_YAXIS);
+}
+
+/**
+ @brief Check if a grid is blocked
+ */
+bool CMap2D::isBlocked(const unsigned int uiRow, const unsigned int uiCol, const bool bInvert) const
+{
+	if (bInvert == true)
+	{
+		if ((arrMapInfo[uiCurLevel][cSettings->NUM_TILES_YAXIS - uiRow - 1][uiCol].value >= 100) &&
+			(arrMapInfo[uiCurLevel][cSettings->NUM_TILES_YAXIS - uiRow - 1][uiCol].value < 200))
+			return true;
+		else
+			return false;
+	}
+	else
+	{
+		if ((arrMapInfo[uiCurLevel][uiRow][uiCol].value >= 100) &&
+			(arrMapInfo[uiCurLevel][uiRow][uiCol].value < 200))
+			return true;
+		else
+			return false;
+	}
+}
+
+/**
+ @brief Returns a 1D index based on a 2D coordinate using row-major layout
+ */
+int CMap2D::ConvertTo1D(const glm::i32vec2& pos) const
+{
+	//return (pos.y * m_dimensions.x) + pos.x;
+	return (pos.y * cSettings->NUM_TILES_XAXIS) + pos.x;
+}
+
+/**
+ @brief Delete AStar lists
+ */
+bool CMap2D::DeleteAStarLists(void)
+{
+	// Delete m_openList
+	while (m_openList.size() != 0)
+		m_openList.pop();
+	// Delete m_cameFromList
+	m_cameFromList.clear();
+	// Delete m_closedList
+	m_closedList.clear();
+
+	return true;
+}
+
+
+/**
+ @brief Reset AStar lists
+ */
+bool CMap2D::ResetAStarLists(void)
+{
+	// Delete m_openList
+	while (m_openList.size() != 0)
+		m_openList.pop();
+	// Reset m_cameFromList
+	for (int i = 0; i < m_cameFromList.size(); i++)
+	{
+		m_cameFromList[i].pos = glm::i32vec2(0, 0);
+		m_cameFromList[i].parent = glm::i32vec2(0, 0);
+		m_cameFromList[i].f = 0;
+		m_cameFromList[i].g = 0;
+		m_cameFromList[i].h = 0;
+	}
+	// Reset m_closedList
+	for (int i = 0; i < m_closedList.size(); i++)
+	{
+		m_closedList[i] = false;
+	}
+
+	return true;
+}
+
+
+/**
+ @brief manhattan calculation method for calculation of h
+ */
+unsigned int heuristic::manhattan(const glm::i32vec2& v1, const glm::i32vec2& v2, int weight)
+{
+	glm::i32vec2 delta = v2 - v1;
+	return static_cast<unsigned int>(weight * (delta.x + delta.y));
+}
+
+/**
+ @brief euclidean calculation method for calculation of h
+ */
+unsigned int heuristic::euclidean(const glm::i32vec2& v1, const glm::i32vec2& v2, int weight)
+{
+	glm::i32vec2 delta = v2 - v1;
+	return static_cast<unsigned int>(weight * sqrt((delta.x * delta.x) + (delta.y * delta.y)));
 }

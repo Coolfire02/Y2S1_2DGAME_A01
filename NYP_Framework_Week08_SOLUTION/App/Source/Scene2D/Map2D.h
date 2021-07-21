@@ -36,21 +36,56 @@ struct MapSize {
 	unsigned int uiColSize;
 };
 
+// Include files for AStar
+#include <queue>
+#include <functional>
+
 // A structure storing information about a map grid
 // It includes data to be used for A* Path Finding
 struct Grid {
 	unsigned int value;
 
-	// Row and Column index of its parent
-	// Note that 0 <= i < uiRowSize & 0 <= j < uiColSize
-	unsigned int uiParentRow, uiParentCol;
-	// Movement Costs: f = g + h
-	double f, g, h;
+	Grid() : value(0), pos(0, 0), parent(-1, -1), f(0), g(0), h(0) {}
+	Grid(const glm::i32vec2& pos, unsigned int f) : value(0), pos(pos), parent(-1, 1), f(f), g(0), h(0) {}
+	Grid(const glm::i32vec2& pos, const glm::i32vec2& parent, unsigned int f, unsigned int g, unsigned int h) : value(0), pos(pos), parent(parent), f(f), g(g), h(h) {}
+
+	glm::i32vec2 pos;
+	glm::i32vec2 parent;
+	unsigned int f;
+	unsigned int g;
+	unsigned int h;
 };
+
+using HeuristicFunction = std::function<unsigned int(const glm::i32vec2&, const glm::i32vec2&, int)>;
+// Reverse std::priority_queue to get the smallest element on top
+inline bool operator< (const Grid& a, const Grid& b) { return b.f < a.f; }
+
+namespace heuristic
+{
+	unsigned int manhattan(const glm::i32vec2& v1, const glm::i32vec2& v2, int weight);
+	unsigned int euclidean(const glm::i32vec2& v1, const glm::i32vec2& v2, int weight);
+	
+}
 
 class CMap2D : public CSingletonTemplate<CMap2D>, public CEntity2D
 {
+
 	friend CSingletonTemplate<CMap2D>;
+protected:
+	int m_weight;
+	//int m_size;
+	unsigned int m_nrOfDirections;
+	//glm::i32vec2 m_dimensions;
+	glm::i32vec2 m_startPos;
+	glm::i32vec2 m_targetPos;
+
+	std::priority_queue<Grid> m_openList;
+	std::vector<bool> m_closedList;
+	std::vector<Grid> m_cameFromList;
+	//std::vector<int> m_grid;
+	std::vector<glm::i32vec2> m_directions;
+	HeuristicFunction m_heuristic;
+
 public:
 
 	enum TILE_ID {
@@ -60,6 +95,7 @@ public:
 
 		ENTITIES_END = 9,
 
+		INTERACTABLES_START = 49,
 		//Interactables (50-69)
 		BOMB_SMALL = 50,
 		BOMB_MEDIUM = 51,
@@ -121,6 +157,8 @@ public:
 	// Find the indices of a certain value in arrMapInfo
 	bool FindValue(const int iValue, unsigned int& uirRow, unsigned int& uirCol, const bool bInvert = true);
 
+	void ClearInteractables();
+
 	// Set current level
 	void SetCurrentLevel(unsigned int uiCurLevel);
 	// Get current level
@@ -129,6 +167,15 @@ public:
 	// Set Color of tile
 	void SetColorOfTile(TILE_ID id, glm::vec4 color);
 
+	std::vector<glm::i32vec2> PathFind(const glm::i32vec2& startPos, const glm::i32vec2& targetPos, HeuristicFunction heuristicFunc, int weight);
+	std::vector<glm::i32vec2> BuildPath() const;
+	void SetDiagonalMovement(const bool bEnable);
+	void PrintSelf(void) const;
+	bool isValid(const glm::i32vec2& pos) const;
+	bool isBlocked(const unsigned int uiRow, const unsigned int uiCol, const bool bInvert = true) const;
+	int ConvertTo1D(const glm::i32vec2& pos) const;
+	bool DeleteAStarLists(void);
+	bool ResetAStarLists(void);
 protected:
 	// The variable containing the rapidcsv::Document
 	// We will load the CSV file's content into this Document

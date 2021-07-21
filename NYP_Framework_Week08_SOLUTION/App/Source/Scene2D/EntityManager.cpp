@@ -98,6 +98,7 @@ void CEntityManager2D::Update(const double dElapsedTime)
 
 		(*it)->Update(dElapsedTime);
 
+		//Collision
 		for (auto& coll : entities)
 		{
 			if (coll != nullptr && coll != (*it))

@@ -47,7 +47,8 @@ void CEnemy2D::CollidedWith(CEntity2D* entity)
 	if (entity->name == "Bomb")
 	{
 		CInventoryItem* eHealth = cInventoryManager->GetItem("EnemyHealth");
-		eHealth->Remove(10);
+		eHealth->Remove(25);
+		cSoundController->PlaySoundByID(2);
 		std::cout << "Ehealth:" << eHealth->GetCount() << std::endl;
 		entity->dead = true;
 		if (eHealth->GetCount() <= 0)

@@ -81,11 +81,23 @@ protected:
 	// Physics
 	CPhysics2D cPhysics2D;
 
+	double bombThrowCD;
+	double nextSwitchCD;
+	double autoSpawnBombCD;
+
+	float jumpBoostCD;
+
 	//CS: Animated Sprite
 	CSpriteAnimation* animatedSprites;
 
 	// Current color
 	glm::vec4 currentColor;
+
+	int dJumpCount;
+
+	float jumpCD;
+
+	void SwitchToMap(CPhysics2D::GRAVITY_DIRECTION);
 
 	// InventoryManager
 	CInventoryManager* cInventoryManager;
