@@ -31,6 +31,9 @@ class CMap2D;
 // Include Physics2D
 #include "Physics2D.h"
 
+// Include Player2D
+#include "Player2D.h"
+
 // Include AnimatedSprites
 #include "Primitives/SpriteAnimation.h"
 
@@ -83,6 +86,9 @@ protected:
 
 	// Handler to the CMap2D instance
 	CMap2D* cMap2D;
+
+	// Player Attached
+	CPlayer2D* cPlayer2D;
 
 	// InventoryManager
 	CInventoryManager* cInventoryManager;

@@ -3,5 +3,4 @@ C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\
 C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\Map2D.cpp(726,26): warning C4018: '<': signed/unsigned mismatch
 C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\Map2D.cpp(787,20): warning C4018: '<': signed/unsigned mismatch
 C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\App\Source\Scene2D\Map2D.cpp(796,20): warning C4018: '<': signed/unsigned mismatch
-LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
   App.vcxproj -> C:\Users\tanyo\Y2S1_2DGAME_A01\NYP_Framework_Week08_SOLUTION\Debug\App.exe
